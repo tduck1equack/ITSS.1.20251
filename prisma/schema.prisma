@@ -145,6 +145,7 @@ model Group {
   class       Class         @relation(fields: [classId], references: [id], onDelete: Cascade)
   createdBy   User          @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Cascade)
   members     GroupMember[]
+  assignments Assignment[]
 
   @@index([classId])
   @@index([createdById])
@@ -180,6 +181,7 @@ enum AssignmentStatus {
 model Assignment {
   id          String           @id @default(cuid())
   classId     String
+  groupId     String?          // Optional: if set, assignment is for specific group only
   title       String
   description String?
   dueDate     DateTime
@@ -191,11 +193,13 @@ model Assignment {
 
   // Relations
   class       Class                  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  group       Group?                 @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdBy   User                   @relation(fields: [createdById], references: [id], onDelete: Cascade)
   submissions AssignmentSubmission[]
   attachments AssignmentAttachment[]
 
   @@index([classId])
+  @@index([groupId])
   @@index([createdById])
   @@index([dueDate])
   @@map("assignments")

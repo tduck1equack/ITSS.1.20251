@@ -51,9 +51,47 @@ export async function GET(
                 id: true,
                 name: true,
                 avatar: true,
+                groupMemberships: {
+                  where: {
+                    group: {
+                      classId: id,
+                    },
+                  },
+                  include: {
+                    group: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
               },
             },
-            comments: true,
+            comments: {
+              include: {
+                author: {
+                  select: {
+                    id: true,
+                    name: true,
+                    avatar: true,
+                    groupMemberships: {
+                      where: {
+                        group: {
+                          classId: id,
+                        },
+                      },
+                      include: {
+                        group: {
+                          select: {
+                            name: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
             votes: true,
           },
         },
@@ -67,7 +105,32 @@ export async function GET(
       return NextResponse.json({ error: "Class not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ class: classItem });
+    // Transform posts to include groupName in author
+    const transformedClass = {
+      ...classItem,
+      posts: classItem.posts.map((post: any) => ({
+        ...post,
+        author: post.author
+          ? {
+              ...post.author,
+              groupName: post.author.groupMemberships?.[0]?.group?.name,
+              groupMemberships: undefined,
+            }
+          : null,
+        comments: post.comments?.map((comment: any) => ({
+          ...comment,
+          author: comment.author
+            ? {
+                ...comment.author,
+                groupName: comment.author.groupMemberships?.[0]?.group?.name,
+                groupMemberships: undefined,
+              }
+            : null,
+        })),
+      })),
+    };
+
+    return NextResponse.json({ class: transformedClass });
   } catch (error) {
     console.error("GET /api/classes/[id] error:", error);
     return NextResponse.json(

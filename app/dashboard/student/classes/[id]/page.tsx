@@ -30,6 +30,10 @@ import {
   FiUserPlus,
 } from "react-icons/fi";
 import DashboardNavBar from "@/components/ui/DashboardNavBar";
+import ClassHeader from "@/components/ui/ClassHeader";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { PostCard } from "@/components/ui/PostCard";
+import { GroupCard } from "@/components/ui/GroupCard";
 import { studentTabs } from "@/components/ui/StudentDashboardNav";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -43,6 +47,26 @@ interface ClassData {
   }>;
   enrollments: Array<{
     student: { id: string; name: string; avatar: string | null };
+  }>;
+  groups?: Array<{
+    id: string;
+    name: string;
+    description?: string | null;
+    members: Array<{
+      student: {
+        id: string;
+        name: string;
+        email: string;
+        avatar: string | null;
+      };
+    }>;
+    assignments?: Array<{
+      id: string;
+      title: string;
+      dueDate: Date | string;
+      status: string;
+      maxPoints: number;
+    }>;
   }>;
   posts: Array<any>;
   assignments: Array<any>;
@@ -67,7 +91,11 @@ export default function StudentClassDetailPage({
     try {
       setLoading(true);
       const { data } = await axios.get(`/api/classes/${id}`);
-      setClassData(data.class);
+
+      // Fetch groups separately
+      const { data: groupsData } = await axios.get(`/api/classes/${id}/groups`);
+
+      setClassData({ ...data.class, groups: groupsData.groups });
       // Check if current user is enrolled
       const enrolled = data.class.enrollments.some(
         (e: any) => e.student.id === user?.id
@@ -164,103 +192,36 @@ export default function StudentClassDetailPage({
       <Container size="4" className="py-8">
         <Flex direction="column" gap="6">
           {/* Class Header */}
-          <Card className="bg-white p-6">
-            <Flex direction="column" gap="3">
-              <Flex justify="between" align="start">
-                <div>
-                  <Flex align="center" gap="2" className="mb-2">
-                    <Badge color="mint" size="2">
-                      {classData.code}
-                    </Badge>
-                    {isEnrolled ? (
-                      <Badge color="green" size="2">
-                        <FiCheckCircle size={12} /> Đã đăng ký
-                      </Badge>
-                    ) : (
-                      <Badge color="gray" size="2">
-                        Có sẵn
-                      </Badge>
-                    )}
-                  </Flex>
-                  <Heading size="8" className="text-gray-900">
-                    {classData.name}
-                  </Heading>
-                  <Text size="3" className="text-gray-600 mt-2">
-                    {classData.description || "Không có mô tả"}
-                  </Text>
-                </div>
-                <Flex gap="2">
-                  <Button
-                    variant="soft"
-                    onClick={() => router.push("/dashboard/student/classes")}
-                  >
-                    Quay lại
-                  </Button>
-                  {isEnrolled ? (
-                    <Dialog.Root
-                      open={isExitDialogOpen}
-                      onOpenChange={setIsExitDialogOpen}
-                    >
-                      <Dialog.Trigger>
-                        <Button color="red" variant="soft">
-                          <FiLogOut size={16} /> Rời khỏi
-                        </Button>
-                      </Dialog.Trigger>
-                      <Dialog.Content style={{ maxWidth: 450 }}>
-                        <Dialog.Title>Xác nhận rời khỏi lớp</Dialog.Title>
-                        <Dialog.Description size="2" mb="4">
-                          Bạn có chắc chắn muốn rời khỏi lớp học này? Bạn có thể
-                          đăng ký lại sau.
-                        </Dialog.Description>
-                        <Flex gap="3" justify="end">
-                          <Dialog.Close>
-                            <Button variant="soft" color="gray">
-                              Hủy
-                            </Button>
-                          </Dialog.Close>
-                          <Button color="red" onClick={handleExit}>
-                            Xác nhận
-                          </Button>
-                        </Flex>
-                      </Dialog.Content>
-                    </Dialog.Root>
-                  ) : (
-                    <Button
-                      className="bg-mint-500 hover:bg-mint-600"
-                      onClick={handleJoin}
-                    >
-                      <FiUserPlus size={16} /> Tham gia
+          <ClassHeader
+            classData={classData}
+            isEnrolled={isEnrolled}
+            enrolledLabel="Đã đăng ký"
+            onBack={() => router.push("/dashboard/student/classes")}
+            role="student"
+            actionButton={
+              isEnrolled ? (
+                <ConfirmDialog
+                  open={isExitDialogOpen}
+                  onOpenChange={setIsExitDialogOpen}
+                  title="Xác nhận rời khỏi lớp"
+                  description="Bạn có chắc chắn muốn rời khỏi lớp học này? Bạn có thể đăng ký lại sau."
+                  onConfirm={handleExit}
+                  trigger={
+                    <Button color="red" variant="soft">
+                      <FiLogOut size={16} /> Rời khỏi
                     </Button>
-                  )}
-                </Flex>
-              </Flex>
-
-              <Flex gap="4" className="mt-4">
-                <Flex align="center" gap="2">
-                  <Avatar
-                    size="2"
-                    src={classData.teachers[0]?.teacher.avatar || undefined}
-                    fallback={
-                      classData.teachers[0]?.teacher.name.charAt(0) || "T"
-                    }
-                    className="bg-mint-500"
-                  />
-                  <Text size="2">
-                    GV:{" "}
-                    <strong>
-                      {classData.teachers.map((t) => t.teacher.name).join(", ")}
-                    </strong>
-                  </Text>
-                </Flex>
-                <Flex align="center" gap="2">
-                  <FiUsers className="text-mint-600" size={20} />
-                  <Text size="2">
-                    <strong>{classData.enrollments.length}</strong> sinh viên
-                  </Text>
-                </Flex>
-              </Flex>
-            </Flex>
-          </Card>
+                  }
+                />
+              ) : (
+                <Button
+                  className="bg-mint-500 hover:bg-mint-600"
+                  onClick={handleJoin}
+                >
+                  <FiUserPlus size={16} /> Tham gia
+                </Button>
+              )
+            }
+          />
 
           {/* Tabs Content */}
           <Tabs.Root defaultValue={isEnrolled ? "posts" : "members"}>
@@ -270,6 +231,7 @@ export default function StudentClassDetailPage({
                   <Tabs.Trigger value="posts">Bài viết</Tabs.Trigger>
                   <Tabs.Trigger value="assignments">Bài tập</Tabs.Trigger>
                   <Tabs.Trigger value="materials">Tài liệu</Tabs.Trigger>
+                  <Tabs.Trigger value="groups">Nhóm</Tabs.Trigger>
                 </>
               )}
               <Tabs.Trigger value="members">Thành viên</Tabs.Trigger>
@@ -282,173 +244,23 @@ export default function StudentClassDetailPage({
                   {classData.posts && classData.posts.length > 0 ? (
                     <Flex direction="column" gap="3">
                       {classData.posts.map((post) => {
-                        const upvotes =
-                          post.votes?.filter(
-                            (v: any) => v.voteType === "UPVOTE"
-                          ).length || 0;
-                        const downvotes =
-                          post.votes?.filter(
-                            (v: any) => v.voteType === "DOWNVOTE"
-                          ).length || 0;
                         const userVote = post.votes?.find(
                           (v: any) => v.userId === user.id
                         );
 
                         return (
-                          <Card key={post.id} className="bg-white p-4">
-                            <Flex gap="3">
-                              <Avatar
-                                size="3"
-                                src={post.author?.avatar}
-                                fallback={post.author?.name?.charAt(0) || "U"}
-                                className="bg-mint-500"
-                              />
-                              <Flex
-                                direction="column"
-                                gap="2"
-                                className="flex-1"
-                              >
-                                <div>
-                                  <Flex align="center" gap="2">
-                                    <Text weight="bold">
-                                      {post.author?.name}
-                                    </Text>
-                                    <Badge
-                                      size="1"
-                                      color={
-                                        post.type === "ANNOUNCEMENT"
-                                          ? "red"
-                                          : "gray"
-                                      }
-                                    >
-                                      {post.type === "ANNOUNCEMENT"
-                                        ? "Thông báo"
-                                        : post.type === "MATERIAL"
-                                        ? "Tài liệu"
-                                        : "Thảo luận"}
-                                    </Badge>
-                                  </Flex>
-                                  <Text size="1" className="text-gray-500">
-                                    {new Date(post.createdAt).toLocaleString(
-                                      "vi-VN"
-                                    )}
-                                  </Text>
-                                </div>
-                                <Heading size="4">{post.title}</Heading>
-                                <Text size="2" className="text-gray-700">
-                                  {post.content}
-                                </Text>
-
-                                {/* Vote buttons */}
-                                <Flex gap="3" align="center">
-                                  <Flex gap="2">
-                                    <Button
-                                      size="1"
-                                      variant={
-                                        userVote?.voteType === "UPVOTE"
-                                          ? "solid"
-                                          : "soft"
-                                      }
-                                      color={
-                                        userVote?.voteType === "UPVOTE"
-                                          ? "mint"
-                                          : "gray"
-                                      }
-                                      onClick={() =>
-                                        handleVote(post.id, "UPVOTE")
-                                      }
-                                    >
-                                      <FiThumbsUp size={14} /> {upvotes}
-                                    </Button>
-                                    <Button
-                                      size="1"
-                                      variant={
-                                        userVote?.voteType === "DOWNVOTE"
-                                          ? "solid"
-                                          : "soft"
-                                      }
-                                      color={
-                                        userVote?.voteType === "DOWNVOTE"
-                                          ? "red"
-                                          : "gray"
-                                      }
-                                      onClick={() =>
-                                        handleVote(post.id, "DOWNVOTE")
-                                      }
-                                    >
-                                      <FiThumbsDown size={14} /> {downvotes}
-                                    </Button>
-                                  </Flex>
-                                  <Flex
-                                    align="center"
-                                    gap="1"
-                                    className="text-gray-600"
-                                  >
-                                    <FiMessageSquare size={16} />
-                                    <Text size="2">
-                                      {post.comments?.length || 0} bình luận
-                                    </Text>
-                                  </Flex>
-                                </Flex>
-
-                                {/* Comments */}
-                                {post.comments && post.comments.length > 0 && (
-                                  <Flex
-                                    direction="column"
-                                    gap="2"
-                                    className="mt-3 pl-4 border-l-2 border-mint-200"
-                                  >
-                                    {post.comments.map((comment: any) => (
-                                      <Flex key={comment.id} gap="2">
-                                        <Avatar
-                                          size="1"
-                                          src={comment.author?.avatar}
-                                          fallback={
-                                            comment.author?.name?.charAt(0) ||
-                                            "U"
-                                          }
-                                          className="bg-gray-400"
-                                        />
-                                        <div className="flex-1">
-                                          <Text size="1" weight="bold">
-                                            {comment.author?.name}
-                                          </Text>
-                                          <Text
-                                            size="2"
-                                            className="text-gray-700"
-                                          >
-                                            {comment.content}
-                                          </Text>
-                                        </div>
-                                      </Flex>
-                                    ))}
-                                  </Flex>
-                                )}
-
-                                {/* Comment input */}
-                                <Flex gap="2" className="mt-2">
-                                  <TextField.Root
-                                    placeholder="Viết bình luận..."
-                                    value={commentText[post.id] || ""}
-                                    onChange={(e) =>
-                                      setCommentText({
-                                        ...commentText,
-                                        [post.id]: e.target.value,
-                                      })
-                                    }
-                                    className="flex-1"
-                                  />
-                                  <Button
-                                    size="2"
-                                    onClick={() => handleComment(post.id)}
-                                    className="bg-mint-500"
-                                  >
-                                    <FiSend size={14} />
-                                  </Button>
-                                </Flex>
-                              </Flex>
-                            </Flex>
-                          </Card>
+                          <PostCard
+                            key={post.id}
+                            post={post}
+                            role="student"
+                            userVote={userVote}
+                            onVote={handleVote}
+                            onComment={handleComment}
+                            commentText={commentText[post.id] || ""}
+                            onCommentChange={(postId, text) =>
+                              setCommentText({ ...commentText, [postId]: text })
+                            }
+                          />
                         );
                       })}
                     </Flex>
@@ -496,6 +308,56 @@ export default function StudentClassDetailPage({
                       Chức năng đang phát triển
                     </Text>
                   </Card>
+                </Flex>
+              </Tabs.Content>
+            )}
+
+            {/* Groups Tab - Only for enrolled students */}
+            {isEnrolled && (
+              <Tabs.Content value="groups">
+                <Flex direction="column" gap="4" className="mt-6">
+                  <Heading size="6">Nhóm của tôi</Heading>
+                  {classData.groups && classData.groups.length > 0 ? (
+                    <>
+                      {(() => {
+                        const myGroup = classData.groups.find((g) =>
+                          g.members.some((m) => m.student.id === user?.id)
+                        );
+
+                        if (myGroup) {
+                          return (
+                            <GroupCard
+                              group={myGroup}
+                              classCode={classData.code}
+                              className={classData.name}
+                            />
+                          );
+                        }
+
+                        return (
+                          <Card className="bg-white p-8 text-center">
+                            <FiUsers
+                              className="mx-auto text-gray-400 mb-4"
+                              size={48}
+                            />
+                            <Text className="text-gray-600">
+                              Bạn chưa được phân vào nhóm nào
+                            </Text>
+                          </Card>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    <Card className="bg-white p-8 text-center">
+                      <FiUsers
+                        className="mx-auto text-gray-400 mb-4"
+                        size={48}
+                      />
+                      <Text className="text-gray-600">
+                        Lớp học chưa được chia nhóm
+                      </Text>
+                    </Card>
+                  )}
                 </Flex>
               </Tabs.Content>
             )}

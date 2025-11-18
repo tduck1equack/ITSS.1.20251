@@ -14,23 +14,23 @@ interface DemoAccount {
 const demoAccounts: DemoAccount[] = [
   {
     role: "Quản trị viên",
-    email: "quantri@hust.edu.vn",
+    email: "admin@hust.edu.vn",
     password: "Admin@2025",
-    name: "Nguyễn Văn Quản",
+    name: "Quản Trị Viên",
     icon: "👨‍💼",
   },
   {
     role: "Giảng viên",
-    email: "nguyenvana@hust.edu.vn",
+    email: "nguyenvanan@hust.edu.vn",
     password: "Teacher@2025",
-    name: "TS. Nguyễn Văn An",
+    name: "PGS.TS. Nguyễn Văn An",
     icon: "👨‍🏫",
   },
   {
     role: "Sinh viên",
-    email: "hoang.nm20210001@sis.hust.edu.vn",
+    email: "nguyenminhan20210001@sis.hust.edu.vn",
     password: "Student@2025",
-    name: "Nguyễn Minh Hoàng",
+    name: "Nguyễn Minh An",
     icon: "👨‍🎓",
   },
 ];
@@ -66,16 +66,10 @@ export default function DemoAccountsCard({
                   <Flex align="center" gap="3">
                     <span className="text-3xl">{account.icon}</span>
                     <Flex direction="column">
-                      <Text
-                        weight="bold"
-                        className="text-gray-900"
-                      >
+                      <Text weight="bold" className="text-gray-900">
                         {account.role}
                       </Text>
-                      <Text
-                        size="2"
-                        className="text-gray-600"
-                      >
+                      <Text size="2" className="text-gray-600">
                         {account.name}
                       </Text>
                     </Flex>

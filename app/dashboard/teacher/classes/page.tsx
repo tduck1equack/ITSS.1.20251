@@ -15,6 +15,7 @@ import {
   TextField,
   TextArea,
   Badge,
+  Tabs,
 } from "@radix-ui/themes";
 import {
   FiBook,
@@ -48,6 +49,7 @@ export default function TeacherClassesPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [classes, setClasses] = useState<Class[]>([]);
+  const [availableClasses, setAvailableClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,10 +72,18 @@ export default function TeacherClassesPage() {
   const fetchClasses = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get(
+      // Fetch teaching classes
+      const { data: myData } = await axios.get(
         `/api/classes?role=teacher&userId=${user?.id}`
       );
-      setClasses(data.classes || []);
+      setClasses(myData.classes || []);
+
+      // Fetch all available classes
+      const { data: allData } = await axios.get("/api/classes");
+      const available = (allData.classes || []).filter(
+        (c: Class) => !myData.classes.some((mc: Class) => mc.id === c.id)
+      );
+      setAvailableClasses(available);
     } catch (error) {
       console.error("Failed to fetch classes:", error);
     } finally {
@@ -132,6 +142,12 @@ export default function TeacherClassesPage() {
 
   // Filter classes based on search query
   const filteredClasses = classes.filter(
+    (c) =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredAvailableClasses = availableClasses.filter(
     (c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.code.toLowerCase().includes(searchQuery.toLowerCase())
@@ -276,41 +292,91 @@ export default function TeacherClassesPage() {
             </TextField.Root>
           </Card>
 
-          {/* Classes List */}
-          {filteredClasses.length === 0 ? (
-            <Card className="bg-white p-8 text-center">
-              <FiBook className="mx-auto text-gray-400 mb-4" size={48} />
-              <Heading size="5" className="text-gray-700 mb-2">
-                {searchQuery ? "Không tìm thấy lớp học" : "Chưa có lớp học nào"}
-              </Heading>
-              <Text className="text-gray-600">
-                {searchQuery
-                  ? "Thử tìm kiếm với từ khóa khác"
-                  : "Hãy tạo lớp học đầu tiên của bạn!"}
-              </Text>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredClasses.map((classItem) => (
-                <div key={classItem.id} className="relative">
-                  <ClassCard
-                    classItem={classItem}
-                    href={`/dashboard/teacher/classes/${classItem.id}`}
-                    isEnrolled={true}
-                  />
-                  <Button
-                    variant="soft"
-                    color="red"
-                    size="1"
-                    className="absolute top-2 right-2"
-                    onClick={() => handleDeleteClass(classItem.id)}
-                  >
-                    <FiTrash2 size={14} />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Tabs for My Classes and Available Classes */}
+          <Tabs.Root defaultValue="my-classes">
+            <Tabs.List>
+              <Tabs.Trigger value="my-classes">
+                Lớp đang giảng dạy ({classes.length})
+              </Tabs.Trigger>
+              <Tabs.Trigger value="available">
+                Lớp có sẵn ({availableClasses.length})
+              </Tabs.Trigger>
+            </Tabs.List>
+
+            {/* My Classes Tab */}
+            <Tabs.Content value="my-classes">
+              <div className="mt-6">
+                {filteredClasses.length === 0 ? (
+                  <Card className="bg-white p-8 text-center">
+                    <FiBook className="mx-auto text-gray-400 mb-4" size={48} />
+                    <Heading size="5" className="text-gray-700 mb-2">
+                      {searchQuery
+                        ? "Không tìm thấy lớp học"
+                        : "Chưa có lớp học nào"}
+                    </Heading>
+                    <Text className="text-gray-600">
+                      {searchQuery
+                        ? "Thử tìm kiếm với từ khóa khác"
+                        : "Hãy tạo lớp học đầu tiên của bạn!"}
+                    </Text>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredClasses.map((classItem) => (
+                      <div key={classItem.id} className="relative">
+                        <ClassCard
+                          classItem={classItem}
+                          href={`/dashboard/teacher/classes/${classItem.id}`}
+                          isEnrolled={true}
+                        />
+                        <Button
+                          variant="soft"
+                          color="red"
+                          size="1"
+                          className="absolute top-2 right-2"
+                          onClick={() => handleDeleteClass(classItem.id)}
+                        >
+                          <FiTrash2 size={14} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Tabs.Content>
+
+            {/* Available Classes Tab */}
+            <Tabs.Content value="available">
+              <div className="mt-6">
+                {filteredAvailableClasses.length === 0 ? (
+                  <Card className="bg-white p-8 text-center">
+                    <FiBook className="mx-auto text-gray-400 mb-4" size={48} />
+                    <Heading size="5" className="text-gray-700 mb-2">
+                      {searchQuery
+                        ? "Không tìm thấy lớp học"
+                        : "Không có lớp học có sẵn"}
+                    </Heading>
+                    <Text className="text-gray-600">
+                      {searchQuery
+                        ? "Thử tìm kiếm với từ khóa khác"
+                        : "Tất cả các lớp học đã được gán giảng viên"}
+                    </Text>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredAvailableClasses.map((classItem) => (
+                      <ClassCard
+                        key={classItem.id}
+                        classItem={classItem}
+                        href={`/dashboard/teacher/classes/${classItem.id}`}
+                        isEnrolled={false}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Tabs.Content>
+          </Tabs.Root>
         </Flex>
       </Container>
     </div>

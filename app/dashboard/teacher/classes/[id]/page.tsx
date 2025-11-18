@@ -30,8 +30,13 @@ import {
   FiCalendar,
   FiLogOut,
   FiUserPlus,
+  FiSettings,
 } from "react-icons/fi";
 import DashboardNavBar from "@/components/ui/DashboardNavBar";
+import ClassHeader from "@/components/ui/ClassHeader";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { PostCard } from "@/components/ui/PostCard";
+import { GroupManagementDialog } from "@/components/ui/GroupManagementDialog";
 import { teacherTabs } from "@/components/ui/TeacherDashboardNav";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -44,7 +49,19 @@ interface ClassData {
     teacher: { id: string; name: string; avatar: string | null };
   }>;
   enrollments: Array<{
-    student: { id: string; name: string; avatar: string | null };
+    student: { id: string; name: string; email: string; avatar: string | null };
+  }>;
+  groups?: Array<{
+    id: string;
+    name: string;
+    members: Array<{
+      student: {
+        id: string;
+        name: string;
+        email: string;
+        avatar: string | null;
+      };
+    }>;
   }>;
   posts: Array<any>;
   assignments: Array<any>;
@@ -64,6 +81,7 @@ export default function TeacherClassDetailPage({
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const [isTeaching, setIsTeaching] = useState(false);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+  const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [postForm, setPostForm] = useState({
     title: "",
     content: "",
@@ -74,7 +92,11 @@ export default function TeacherClassDetailPage({
     try {
       setLoading(true);
       const { data } = await axios.get(`/api/classes/${id}`);
-      setClassData(data.class);
+
+      // Fetch groups separately
+      const { data: groupsData } = await axios.get(`/api/classes/${id}/groups`);
+
+      setClassData({ ...data.class, groups: groupsData.groups });
       // Check if current user is teaching this class
       const teaching = data.class.teachers.some(
         (t: any) => t.teacher.id === user?.id
@@ -132,6 +154,21 @@ export default function TeacherClassDetailPage({
     }
   };
 
+  const handleSaveGroups = async (
+    groups: Array<{ name: string; memberIds: string[] }>
+  ) => {
+    try {
+      await axios.post(`/api/classes/${id}/groups`, {
+        groups,
+        createdById: user?.id,
+      });
+      fetchClassData();
+    } catch (error) {
+      console.error("Failed to save groups:", error);
+      throw error;
+    }
+  };
+
   if (isLoading || loading) {
     return (
       <div className="min-h-screen bg-mint-50">
@@ -156,102 +193,56 @@ export default function TeacherClassDetailPage({
       <Container size="4" className="py-8">
         <Flex direction="column" gap="6">
           {/* Class Header */}
-          <Card className="bg-white p-6">
-            <Flex direction="column" gap="3">
-              <Flex justify="between" align="start">
-                <div>
-                  <Flex align="center" gap="2" className="mb-2">
-                    <Badge color="mint" size="2">
-                      {classData.code}
-                    </Badge>
-                    {isTeaching ? (
-                      <Badge color="green" size="2">
-                        <FiCheckCircle size={12} /> Đang giảng dạy
-                      </Badge>
-                    ) : (
-                      <Badge color="gray" size="2">
-                        Có sẵn
-                      </Badge>
-                    )}
-                  </Flex>
-                  <Heading size="8" className="text-gray-900">
-                    {classData.name}
-                  </Heading>
-                  <Text size="3" className="text-gray-600 mt-2">
-                    {classData.description || "Không có mô tả"}
-                  </Text>
-                </div>
+          <ClassHeader
+            classData={classData}
+            isEnrolled={isTeaching}
+            enrolledLabel="Đang giảng dạy"
+            onBack={() => router.push("/dashboard/teacher/classes")}
+            role="teacher"
+            actionButton={
+              isTeaching ? (
                 <Flex gap="2">
                   <Button
                     variant="soft"
-                    onClick={() => router.push("/dashboard/teacher/classes")}
+                    onClick={() => setIsGroupDialogOpen(true)}
                   >
-                    Quay lại
+                    <FiSettings size={16} />
+                    {classData.groups && classData.groups.length > 0
+                      ? "Cấu hình nhóm"
+                      : "Tạo nhóm"}
                   </Button>
-                  {isTeaching ? (
-                    <Dialog.Root
-                      open={isLeaveDialogOpen}
-                      onOpenChange={setIsLeaveDialogOpen}
-                    >
-                      <Dialog.Trigger>
-                        <Button color="red" variant="soft">
-                          <FiLogOut size={16} /> Rời khỏi
-                        </Button>
-                      </Dialog.Trigger>
-                      <Dialog.Content style={{ maxWidth: 450 }}>
-                        <Dialog.Title>
-                          Xác nhận rời khỏi lớp giảng dạy
-                        </Dialog.Title>
-                        <Dialog.Description size="2" mb="4">
-                          Bạn có chắc chắn muốn rời khỏi giảng dạy lớp học này?
-                          Bạn có thể tham gia lại sau.
-                        </Dialog.Description>
-                        <Flex gap="3" justify="end">
-                          <Dialog.Close>
-                            <Button variant="soft" color="gray">
-                              Hủy
-                            </Button>
-                          </Dialog.Close>
-                          <Button color="red" onClick={handleLeave}>
-                            Xác nhận
-                          </Button>
-                        </Flex>
-                      </Dialog.Content>
-                    </Dialog.Root>
-                  ) : (
-                    <Button
-                      className="bg-mint-500 hover:bg-mint-600"
-                      onClick={handleJoin}
-                    >
-                      <FiUserPlus size={16} /> Tham gia giảng dạy
-                    </Button>
-                  )}
+                  <ConfirmDialog
+                    open={isLeaveDialogOpen}
+                    onOpenChange={setIsLeaveDialogOpen}
+                    title="Xác nhận rời khỏi lớp giảng dạy"
+                    description="Bạn có chắc chắn muốn rời khỏi giảng dạy lớp học này? Bạn có thể tham gia lại sau."
+                    onConfirm={handleLeave}
+                    trigger={
+                      <Button color="red" variant="soft">
+                        <FiLogOut size={16} /> Rời khỏi
+                      </Button>
+                    }
+                  />
                 </Flex>
-              </Flex>
+              ) : (
+                <Button
+                  className="bg-mint-500 hover:bg-mint-600"
+                  onClick={handleJoin}
+                >
+                  <FiUserPlus size={16} /> Tham gia giảng dạy
+                </Button>
+              )
+            }
+          />
 
-              <Flex gap="4" className="mt-4">
-                <Flex align="center" gap="2">
-                  <FiUsers className="text-mint-600" size={20} />
-                  <Text size="2">
-                    <strong>{classData.enrollments.length}</strong> sinh viên
-                  </Text>
-                </Flex>
-                <Flex align="center" gap="2">
-                  <FiFileText className="text-mint-600" size={20} />
-                  <Text size="2">
-                    <strong>{classData.assignments?.length || 0}</strong> bài
-                    tập
-                  </Text>
-                </Flex>
-                <Flex align="center" gap="2">
-                  <FiMessageSquare className="text-mint-600" size={20} />
-                  <Text size="2">
-                    <strong>{classData.posts?.length || 0}</strong> bài viết
-                  </Text>
-                </Flex>
-              </Flex>
-            </Flex>
-          </Card>
+          {/* Group Management Dialog */}
+          <GroupManagementDialog
+            open={isGroupDialogOpen}
+            onOpenChange={setIsGroupDialogOpen}
+            students={classData.enrollments.map((e) => e.student)}
+            existingGroups={classData.groups}
+            onSave={handleSaveGroups}
+          />
 
           {/* Tabs Content */}
           <Tabs.Root defaultValue={isTeaching ? "posts" : "students"}>
@@ -364,62 +355,7 @@ export default function TeacherClassDetailPage({
                   {classData.posts && classData.posts.length > 0 ? (
                     <Flex direction="column" gap="3">
                       {classData.posts.map((post) => (
-                        <Card key={post.id} className="bg-white p-4">
-                          <Flex gap="3">
-                            <Avatar
-                              size="3"
-                              src={post.author?.avatar}
-                              fallback={post.author?.name?.charAt(0) || "U"}
-                              className="bg-mint-500"
-                            />
-                            <Flex direction="column" gap="2" className="flex-1">
-                              <div>
-                                <Flex align="center" gap="2">
-                                  <Text weight="bold">{post.author?.name}</Text>
-                                  <Badge
-                                    size="1"
-                                    color={
-                                      post.type === "ANNOUNCEMENT"
-                                        ? "red"
-                                        : "gray"
-                                    }
-                                  >
-                                    {post.type === "ANNOUNCEMENT"
-                                      ? "Thông báo"
-                                      : post.type === "MATERIAL"
-                                      ? "Tài liệu"
-                                      : "Thảo luận"}
-                                  </Badge>
-                                </Flex>
-                                <Text size="1" className="text-gray-500">
-                                  {new Date(post.createdAt).toLocaleString(
-                                    "vi-VN"
-                                  )}
-                                </Text>
-                              </div>
-                              <Heading size="4">{post.title}</Heading>
-                              <Text size="2" className="text-gray-700">
-                                {post.content}
-                              </Text>
-                              <Flex gap="4" className="text-sm text-gray-600">
-                                <Flex align="center" gap="1">
-                                  <FiThumbsUp size={16} />
-                                  <Text size="2">
-                                    {post.votes?.filter(
-                                      (v: any) => v.voteType === "UPVOTE"
-                                    ).length || 0}
-                                  </Text>
-                                </Flex>
-                                <Flex align="center" gap="1">
-                                  <FiMessageSquare size={16} />
-                                  <Text size="2">
-                                    {post.comments?.length || 0} bình luận
-                                  </Text>
-                                </Flex>
-                              </Flex>
-                            </Flex>
-                          </Flex>
-                        </Card>
+                        <PostCard key={post.id} post={post} role="teacher" />
                       ))}
                     </Flex>
                   ) : (

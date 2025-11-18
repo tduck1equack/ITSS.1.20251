@@ -18,11 +18,6 @@ export const teacherTabs = [
     icon: <FiFileText size={18} />,
   },
   {
-    label: "Nhóm",
-    href: "/dashboard/teacher/groups",
-    icon: <FiUsers size={18} />,
-  },
-  {
     label: "Bài viết",
     href: "/dashboard/teacher/posts",
     icon: <FiMessageSquare size={18} />,
