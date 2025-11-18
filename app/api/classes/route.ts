@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      const classes = classTeachers.map((ct) => ({
+      const teachingClasses = classTeachers.map((ct) => ({
         id: ct.class.id,
         code: ct.class.code,
         name: ct.class.name,
@@ -43,9 +43,45 @@ export async function GET(request: NextRequest) {
         year: ct.class.year,
         studentCount: ct.class.enrollments.length,
         teacherNames: ct.class.teachers.map((t) => t.teacher.name),
+        isTeaching: true,
       }));
 
-      return NextResponse.json({ classes });
+      // Get all available classes (not teaching)
+      const teachingClassIds = teachingClasses.map((c) => c.id);
+      const availableClasses = await prisma.class.findMany({
+        where: {
+          status: "ACTIVE",
+          id: { notIn: teachingClassIds },
+        },
+        include: {
+          teachers: {
+            include: {
+              teacher: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          enrollments: true,
+        },
+      });
+
+      const available = availableClasses.map((classItem) => ({
+        id: classItem.id,
+        code: classItem.code,
+        name: classItem.name,
+        description: classItem.description,
+        coverImage: classItem.coverImage,
+        status: classItem.status,
+        semester: classItem.semester,
+        year: classItem.year,
+        studentCount: classItem.enrollments.length,
+        teacherNames: classItem.teachers.map((t) => t.teacher.name),
+        isTeaching: false,
+      }));
+
+      return NextResponse.json({ teaching: teachingClasses, available });
     } else if (userId) {
       // Student view - get enrolled and available classes
       const enrolledClasses = await prisma.classEnrollment.findMany({

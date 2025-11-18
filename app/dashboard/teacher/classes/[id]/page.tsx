@@ -37,6 +37,8 @@ import ClassHeader from "@/components/ui/ClassHeader";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { PostCard } from "@/components/ui/PostCard";
 import { GroupManagementDialog } from "@/components/ui/GroupManagementDialog";
+import { ClassSettingsDialog } from "@/components/ui/ClassSettingsDialog";
+import { CreatePostDialog } from "@/components/ui/CreatePostDialog";
 import { teacherTabs } from "@/components/ui/TeacherDashboardNav";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -45,6 +47,8 @@ interface ClassData {
   code: string;
   name: string;
   description: string | null;
+  semester: string | null;
+  year: number | null;
   teachers: Array<{
     teacher: { id: string; name: string; avatar: string | null };
   }>;
@@ -82,11 +86,7 @@ export default function TeacherClassDetailPage({
   const [isTeaching, setIsTeaching] = useState(false);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
-  const [postForm, setPostForm] = useState({
-    title: "",
-    content: "",
-    type: "DISCUSSION",
-  });
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
 
   const fetchClassData = async () => {
     try {
@@ -117,18 +117,21 @@ export default function TeacherClassDetailPage({
     }
   }, [user, isLoading, id]);
 
-  const handleCreatePost = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreatePost = async (formData: {
+    title: string;
+    content: string;
+    type: string;
+  }) => {
     try {
       await axios.post(`/api/classes/${id}/posts`, {
-        ...postForm,
+        ...formData,
         authorId: user?.id,
       });
       setIsPostDialogOpen(false);
-      setPostForm({ title: "", content: "", type: "DISCUSSION" });
       fetchClassData();
     } catch (error) {
       console.error("Failed to create post:", error);
+      throw error;
     }
   };
 
@@ -204,6 +207,13 @@ export default function TeacherClassDetailPage({
                 <Flex gap="2">
                   <Button
                     variant="soft"
+                    onClick={() => setIsSettingsDialogOpen(true)}
+                  >
+                    <FiSettings size={16} />
+                    Cấu hình lớp
+                  </Button>
+                  <Button
+                    variant="soft"
                     onClick={() => setIsGroupDialogOpen(true)}
                   >
                     <FiSettings size={16} />
@@ -234,6 +244,16 @@ export default function TeacherClassDetailPage({
               )
             }
           />
+
+          {/* Class Settings Dialog */}
+          {isTeaching && (
+            <ClassSettingsDialog
+              open={isSettingsDialogOpen}
+              onOpenChange={setIsSettingsDialogOpen}
+              classData={classData}
+              onUpdate={fetchClassData}
+            />
+          )}
 
           {/* Group Management Dialog */}
           <GroupManagementDialog
@@ -266,91 +286,19 @@ export default function TeacherClassDetailPage({
                 <Flex direction="column" gap="4" className="mt-6">
                   <Flex justify="between" align="center">
                     <Heading size="6">Bài viết trong lớp</Heading>
-                    <Dialog.Root
-                      open={isPostDialogOpen}
-                      onOpenChange={setIsPostDialogOpen}
+                    <Button
+                      className="bg-mint-500 hover:bg-mint-600"
+                      onClick={() => setIsPostDialogOpen(true)}
                     >
-                      <Dialog.Trigger>
-                        <Button className="bg-mint-500 hover:bg-mint-600">
-                          <FiPlus size={16} /> Tạo bài viết
-                        </Button>
-                      </Dialog.Trigger>
-                      <Dialog.Content style={{ maxWidth: 600 }}>
-                        <Dialog.Title>Tạo bài viết mới</Dialog.Title>
-                        <form onSubmit={handleCreatePost}>
-                          <Flex direction="column" gap="3" className="mt-4">
-                            <label>
-                              <Text as="div" size="2" mb="1" weight="bold">
-                                Loại bài viết
-                              </Text>
-                              <Select.Root
-                                value={postForm.type}
-                                onValueChange={(value) =>
-                                  setPostForm({ ...postForm, type: value })
-                                }
-                              >
-                                <Select.Trigger />
-                                <Select.Content>
-                                  <Select.Item value="ANNOUNCEMENT">
-                                    Thông báo
-                                  </Select.Item>
-                                  <Select.Item value="DISCUSSION">
-                                    Thảo luận
-                                  </Select.Item>
-                                  <Select.Item value="MATERIAL">
-                                    Tài liệu
-                                  </Select.Item>
-                                </Select.Content>
-                              </Select.Root>
-                            </label>
-                            <label>
-                              <Text as="div" size="2" mb="1" weight="bold">
-                                Tiêu đề
-                              </Text>
-                              <TextField.Root
-                                placeholder="Nhập tiêu đề..."
-                                value={postForm.title}
-                                onChange={(e) =>
-                                  setPostForm({
-                                    ...postForm,
-                                    title: e.target.value,
-                                  })
-                                }
-                                required
-                              />
-                            </label>
-                            <label>
-                              <Text as="div" size="2" mb="1" weight="bold">
-                                Nội dung
-                              </Text>
-                              <TextArea
-                                placeholder="Nhập nội dung bài viết..."
-                                value={postForm.content}
-                                onChange={(e) =>
-                                  setPostForm({
-                                    ...postForm,
-                                    content: e.target.value,
-                                  })
-                                }
-                                rows={6}
-                                required
-                              />
-                            </label>
-                          </Flex>
-                          <Flex gap="3" mt="4" justify="end">
-                            <Dialog.Close>
-                              <Button variant="soft" color="gray">
-                                Hủy
-                              </Button>
-                            </Dialog.Close>
-                            <Button type="submit" className="bg-mint-500">
-                              Đăng bài
-                            </Button>
-                          </Flex>
-                        </form>
-                      </Dialog.Content>
-                    </Dialog.Root>
+                      <FiPlus size={16} /> Tạo bài viết
+                    </Button>
                   </Flex>
+
+                  <CreatePostDialog
+                    open={isPostDialogOpen}
+                    onOpenChange={setIsPostDialogOpen}
+                    onSubmit={handleCreatePost}
+                  />
 
                   {classData.posts && classData.posts.length > 0 ? (
                     <Flex direction="column" gap="3">

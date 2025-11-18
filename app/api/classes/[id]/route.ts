@@ -171,6 +171,38 @@ export async function PUT(
   }
 }
 
+// PATCH /api/classes/[id] - Partially update class
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { code, name, description, semester, year, status } = body;
+
+    const updatedClass = await prisma.class.update({
+      where: { id },
+      data: {
+        ...(code !== undefined && { code }),
+        ...(name !== undefined && { name }),
+        ...(description !== undefined && { description }),
+        ...(semester !== undefined && { semester }),
+        ...(year !== undefined && { year }),
+        ...(status !== undefined && { status }),
+      },
+    });
+
+    return NextResponse.json({ class: updatedClass });
+  } catch (error) {
+    console.error("PATCH /api/classes/[id] error:", error);
+    return NextResponse.json(
+      { error: "Failed to update class" },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE /api/classes/[id] - Delete class
 export async function DELETE(
   request: NextRequest,

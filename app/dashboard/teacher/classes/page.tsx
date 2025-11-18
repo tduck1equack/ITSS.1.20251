@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios from "@/lib/axios";
 import {
@@ -11,24 +10,13 @@ import {
   Card,
   Flex,
   Button,
-  Dialog,
   TextField,
-  TextArea,
-  Badge,
   Tabs,
 } from "@radix-ui/themes";
-import {
-  FiBook,
-  FiUsers,
-  FiClock,
-  FiPlus,
-  FiEdit,
-  FiTrash2,
-  FiCheckCircle,
-  FiSearch,
-} from "react-icons/fi";
+import { FiBook, FiPlus, FiTrash2, FiSearch } from "react-icons/fi";
 import DashboardNavBar from "@/components/ui/DashboardNavBar";
 import ClassCard from "@/components/ui/ClassCard";
+import { CreateClassDialog } from "@/components/ui/CreateClassDialog";
 import { teacherTabs } from "@/components/ui/TeacherDashboardNav";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -43,23 +31,17 @@ interface Class {
   year: number | null;
   studentCount: number;
   teacherNames: string[];
+  isTeaching?: boolean;
 }
 
 export default function TeacherClassesPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [classes, setClasses] = useState<Class[]>([]);
+  const [teachingClasses, setTeachingClasses] = useState<Class[]>([]);
   const [availableClasses, setAvailableClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    description: "",
-    semester: "",
-    year: new Date().getFullYear(),
-  });
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "TEACHER")) {
@@ -72,18 +54,11 @@ export default function TeacherClassesPage() {
   const fetchClasses = async () => {
     try {
       setLoading(true);
-      // Fetch teaching classes
-      const { data: myData } = await axios.get(
+      const { data } = await axios.get(
         `/api/classes?role=teacher&userId=${user?.id}`
       );
-      setClasses(myData.classes || []);
-
-      // Fetch all available classes
-      const { data: allData } = await axios.get("/api/classes");
-      const available = (allData.classes || []).filter(
-        (c: Class) => !myData.classes.some((mc: Class) => mc.id === c.id)
-      );
-      setAvailableClasses(available);
+      setTeachingClasses(data.teaching || []);
+      setAvailableClasses(data.available || []);
     } catch (error) {
       console.error("Failed to fetch classes:", error);
     } finally {
@@ -91,24 +66,23 @@ export default function TeacherClassesPage() {
     }
   };
 
-  const handleCreateClass = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateClass = async (formData: {
+    code: string;
+    name: string;
+    description: string;
+    semester: string;
+    year: number;
+  }) => {
     try {
       await axios.post("/api/classes", {
         ...formData,
         teacherId: user?.id,
       });
       setIsCreateDialogOpen(false);
-      setFormData({
-        code: "",
-        name: "",
-        description: "",
-        semester: "",
-        year: new Date().getFullYear(),
-      });
       fetchClasses();
     } catch (error) {
       console.error("Failed to create class:", error);
+      throw error;
     }
   };
 
@@ -141,7 +115,7 @@ export default function TeacherClassesPage() {
   }
 
   // Filter classes based on search query
-  const filteredClasses = classes.filter(
+  const filteredTeachingClasses = teachingClasses.filter(
     (c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.code.toLowerCase().includes(searchQuery.toLowerCase())
@@ -169,114 +143,20 @@ export default function TeacherClassesPage() {
                 Quản lý các lớp học bạn đang giảng dạy
               </Text>
             </div>
-            <Dialog.Root
-              open={isCreateDialogOpen}
-              onOpenChange={setIsCreateDialogOpen}
+            <Button
+              className="bg-mint-500 hover:bg-mint-600 text-white"
+              onClick={() => setIsCreateDialogOpen(true)}
             >
-              <Dialog.Trigger>
-                <Button className="bg-mint-500 hover:bg-mint-600 text-white">
-                  <FiPlus size={18} /> Tạo lớp mới
-                </Button>
-              </Dialog.Trigger>
-              <Dialog.Content style={{ maxWidth: 500 }}>
-                <Dialog.Title>Tạo lớp học mới</Dialog.Title>
-                <Dialog.Description size="2" mb="4">
-                  Điền thông tin để tạo lớp học mới
-                </Dialog.Description>
-                <form onSubmit={handleCreateClass}>
-                  <Flex direction="column" gap="3">
-                    <label>
-                      <Text as="div" size="2" mb="1" weight="bold">
-                        Mã lớp <span className="text-red-500">*</span>
-                      </Text>
-                      <TextField.Root
-                        placeholder="VD: CS101-2024"
-                        value={formData.code}
-                        onChange={(e) =>
-                          setFormData({ ...formData, code: e.target.value })
-                        }
-                        required
-                      />
-                    </label>
-                    <label>
-                      <Text as="div" size="2" mb="1" weight="bold">
-                        Tên lớp <span className="text-red-500">*</span>
-                      </Text>
-                      <TextField.Root
-                        placeholder="VD: Nhập môn Khoa học Máy tính"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        required
-                      />
-                    </label>
-                    <label>
-                      <Text as="div" size="2" mb="1" weight="bold">
-                        Mô tả
-                      </Text>
-                      <TextArea
-                        placeholder="Mô tả về lớp học..."
-                        value={formData.description}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            description: e.target.value,
-                          })
-                        }
-                        rows={3}
-                      />
-                    </label>
-                    <Flex gap="3">
-                      <label className="flex-1">
-                        <Text as="div" size="2" mb="1" weight="bold">
-                          Học kỳ
-                        </Text>
-                        <TextField.Root
-                          placeholder="VD: HK1"
-                          value={formData.semester}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              semester: e.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                      <label className="flex-1">
-                        <Text as="div" size="2" mb="1" weight="bold">
-                          Năm học
-                        </Text>
-                        <TextField.Root
-                          type="number"
-                          value={formData.year}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              year: parseInt(e.target.value),
-                            })
-                          }
-                        />
-                      </label>
-                    </Flex>
-                  </Flex>
-                  <Flex gap="3" mt="4" justify="end">
-                    <Dialog.Close>
-                      <Button variant="soft" color="gray">
-                        Hủy
-                      </Button>
-                    </Dialog.Close>
-                    <Button
-                      type="submit"
-                      className="bg-mint-500 hover:bg-mint-600"
-                    >
-                      Tạo lớp học
-                    </Button>
-                  </Flex>
-                </form>
-              </Dialog.Content>
-            </Dialog.Root>
+              <FiPlus size={18} /> Tạo lớp mới
+            </Button>
           </Flex>
+
+          {/* Create Class Dialog */}
+          <CreateClassDialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+            onSubmit={handleCreateClass}
+          />
 
           {/* Search Bar */}
           <Card className="bg-white p-4">
@@ -292,21 +172,21 @@ export default function TeacherClassesPage() {
             </TextField.Root>
           </Card>
 
-          {/* Tabs for My Classes and Available Classes */}
-          <Tabs.Root defaultValue="my-classes">
+          {/* Tabs for Teaching and Available Classes */}
+          <Tabs.Root defaultValue="teaching">
             <Tabs.List>
-              <Tabs.Trigger value="my-classes">
-                Lớp đang giảng dạy ({classes.length})
+              <Tabs.Trigger value="teaching">
+                Lớp đang giảng dạy ({teachingClasses.length})
               </Tabs.Trigger>
               <Tabs.Trigger value="available">
                 Lớp có sẵn ({availableClasses.length})
               </Tabs.Trigger>
             </Tabs.List>
 
-            {/* My Classes Tab */}
-            <Tabs.Content value="my-classes">
+            {/* Teaching Classes Tab */}
+            <Tabs.Content value="teaching">
               <div className="mt-6">
-                {filteredClasses.length === 0 ? (
+                {filteredTeachingClasses.length === 0 ? (
                   <Card className="bg-white p-8 text-center">
                     <FiBook className="mx-auto text-gray-400 mb-4" size={48} />
                     <Heading size="5" className="text-gray-700 mb-2">
@@ -322,7 +202,7 @@ export default function TeacherClassesPage() {
                   </Card>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredClasses.map((classItem) => (
+                    {filteredTeachingClasses.map((classItem) => (
                       <div key={classItem.id} className="relative">
                         <ClassCard
                           classItem={classItem}
@@ -359,7 +239,7 @@ export default function TeacherClassesPage() {
                     <Text className="text-gray-600">
                       {searchQuery
                         ? "Thử tìm kiếm với từ khóa khác"
-                        : "Tất cả các lớp học đã được gán giảng viên"}
+                        : "Bạn đã tham gia tất cả các lớp học"}
                     </Text>
                   </Card>
                 ) : (
