@@ -1,0 +1,130 @@
+import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@/prisma/generated/client";
+
+const prisma = new PrismaClient();
+
+// GET /api/classes/[id] - Get class details
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const classItem = await prisma.class.findUnique({
+      where: { id },
+      include: {
+        teachers: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+        enrollments: {
+          where: { status: "ACTIVE" },
+          include: {
+            student: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+        assignments: {
+          orderBy: { dueDate: "asc" },
+          take: 5,
+        },
+        posts: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true,
+              },
+            },
+            comments: true,
+            votes: true,
+          },
+        },
+        learningMaterials: {
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    if (!classItem) {
+      return NextResponse.json({ error: "Class not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ class: classItem });
+  } catch (error) {
+    console.error("GET /api/classes/[id] error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch class" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/classes/[id] - Update class
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { name, description, semester, year, status } = body;
+
+    const updatedClass = await prisma.class.update({
+      where: { id },
+      data: {
+        name,
+        description,
+        semester,
+        year,
+        status,
+      },
+    });
+
+    return NextResponse.json({ class: updatedClass });
+  } catch (error) {
+    console.error("PUT /api/classes/[id] error:", error);
+    return NextResponse.json(
+      { error: "Failed to update class" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/classes/[id] - Delete class
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await prisma.class.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Class deleted successfully" });
+  } catch (error) {
+    console.error("DELETE /api/classes/[id] error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete class" },
+      { status: 500 }
+    );
+  }
+}

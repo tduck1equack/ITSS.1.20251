@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@/prisma/generated/client";
 
-// Mock user database - Replace with your actual database
-const MOCK_USERS = [
-  {
-    id: 1,
-    email: "user@example.com",
-    password: "password123", // In production, use hashed passwords!
-    name: "John Doe",
-  },
-  {
-    id: 2,
-    email: "admin@example.com",
-    password: "admin123",
-    name: "Admin User",
-  },
-];
+const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,57 +11,62 @@ export async function POST(request: NextRequest) {
     // Validate input
     if (!email || !password) {
       return NextResponse.json(
-        { message: "Email and password are required" },
+        { error: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    // Find user - In production, query your database
-    const user = MOCK_USERS.find(
-      (u) => u.email === email && u.password === password
-    );
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        role: true,
+        avatar: true,
+        bio: true,
+        status: true,
+      },
+    });
 
+    // Check if user exists
     if (!user) {
       return NextResponse.json(
-        { message: "Invalid email or password" },
+        { error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    // In production:
-    // 1. Verify password hash (e.g., using bcrypt)
-    // 2. Generate JWT token or session
-    // 3. Set secure httpOnly cookies
-    // 4. Return user data (without password)
+    // Check user status
+    if (user.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Account is not active. Please contact administrator." },
+        { status: 403 }
+      );
+    }
 
-    // Mock successful login response
-    const response = NextResponse.json(
-      {
-        message: "Login successful",
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
-        // In production, include a JWT token
-        token: "mock-jwt-token-" + Date.now(),
-      },
-      { status: 200 }
-    );
+    // Verify password (in production, use bcrypt.compare)
+    // For now, we're doing direct comparison since passwords are not hashed
+    if (user.password !== password) {
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      );
+    }
 
-    // Set a mock session cookie (in production, use secure settings)
-    response.cookies.set("session", "mock-session-" + user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 1 week
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
+
+    return NextResponse.json({
+      message: "Login successful",
+      user: userWithoutPassword,
     });
-
-    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
-      { message: "Internal server error" },
+      { error: "An error occurred during login" },
       { status: 500 }
     );
   }

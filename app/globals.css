@@ -1,9 +1,40 @@
 @import "tailwindcss";
-@import "@radix-ui/themes/styles.css"
+@import "@radix-ui/themes/styles.css";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Mint theme colors - Light mode */
+  --mint-50: #f0fdf9;
+  --mint-100: #ccfbef;
+  --mint-200: #99f6e0;
+  --mint-300: #5fe9d0;
+  --mint-400: #2dd4bf;
+  --mint-500: #14b8a6;
+  --mint-600: #0d9488;
+  --mint-700: #0f766e;
+  --mint-800: #115e59;
+  --mint-900: #134e4a;
+  --mint-950: #042f2e;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+
+  /* Dark mint colors for dark mode */
+  --mint-50: #042f2e;
+  --mint-100: #134e4a;
+  --mint-200: #115e59;
+  --mint-300: #0f766e;
+  --mint-400: #0d9488;
+  --mint-500: #14b8a6;
+  --mint-600: #2dd4bf;
+  --mint-700: #5fe9d0;
+  --mint-800: #99f6e0;
+  --mint-900: #ccfbef;
+  --mint-950: #f0fdf9;
 }
 
 @theme inline {
@@ -11,17 +42,23 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Custom mint colors */
+  --color-mint-50: var(--mint-50);
+  --color-mint-100: var(--mint-100);
+  --color-mint-200: var(--mint-200);
+  --color-mint-300: var(--mint-300);
+  --color-mint-400: var(--mint-400);
+  --color-mint-500: var(--mint-500);
+  --color-mint-600: var(--mint-600);
+  --color-mint-700: var(--mint-700);
+  --color-mint-800: var(--mint-800);
+  --color-mint-900: var(--mint-900);
+  --color-mint-950: var(--mint-950);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
