@@ -34,6 +34,7 @@ export async function GET(
                 name: true,
                 email: true,
                 avatar: true,
+                studentCode: true,
               },
             },
           },
@@ -179,7 +180,41 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { code, name, description, semester, year, status } = body;
+    const {
+      code,
+      name,
+      description,
+      semester,
+      year,
+      status,
+      isPrivate,
+      joinCode,
+    } = body;
+
+    // Validate joinCode if class is being set to private
+    if (isPrivate && joinCode) {
+      if (joinCode.length !== 8) {
+        return NextResponse.json(
+          { error: "Join code must be exactly 8 characters" },
+          { status: 400 }
+        );
+      }
+
+      // Check if joinCode is already used by another class
+      const existingCode = await prisma.class.findFirst({
+        where: {
+          joinCode,
+          NOT: { id },
+        },
+      });
+
+      if (existingCode) {
+        return NextResponse.json(
+          { error: "Join code already exists" },
+          { status: 409 }
+        );
+      }
+    }
 
     const updatedClass = await prisma.class.update({
       where: { id },
@@ -190,6 +225,9 @@ export async function PATCH(
         ...(semester !== undefined && { semester }),
         ...(year !== undefined && { year }),
         ...(status !== undefined && { status }),
+        ...(isPrivate !== undefined && { isPrivate }),
+        ...(isPrivate && joinCode !== undefined && { joinCode }),
+        ...(!isPrivate && { joinCode: null }),
       },
     });
 

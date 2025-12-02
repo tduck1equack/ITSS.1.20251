@@ -21,9 +21,11 @@ import {
   FiClock,
   FiCheckCircle,
   FiSearch,
+  FiKey,
 } from "react-icons/fi";
 import DashboardNavBar from "@/components/ui/DashboardNavBar";
 import ClassCard from "@/components/ui/ClassCard";
+import { JoinClassDialog } from "@/components/ui/JoinClassDialog";
 import { studentTabs } from "@/components/ui/StudentDashboardNav";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -48,6 +50,7 @@ export default function StudentClassesPage() {
   const [availableClasses, setAvailableClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "STUDENT")) {
@@ -118,14 +121,24 @@ export default function StudentClassesPage() {
       <Container size="4" className="py-8">
         <Flex direction="column" gap="6">
           {/* Header */}
-          <div>
-            <Heading size="8" className="text-gray-900 mb-2">
-              Lớp học
-            </Heading>
-            <Text size="4" className="text-gray-600">
-              Quản lý các lớp học bạn đang tham gia và khám phá lớp mới
-            </Text>
-          </div>
+          <Flex justify="between" align="center">
+            <div>
+              <Heading size="8" className="text-gray-900 mb-2">
+                Lớp học
+              </Heading>
+              <Text size="4" className="text-gray-600">
+                Quản lý các lớp học bạn đang tham gia và khám phá lớp mới
+              </Text>
+            </div>
+            <Button
+              size="3"
+              onClick={() => setIsJoinDialogOpen(true)}
+              className="bg-mint-500 hover:bg-mint-600"
+            >
+              <FiKey size={18} />
+              Tham gia lớp riêng tư
+            </Button>
+          </Flex>
 
           {/* Search Bar */}
           <Card className="bg-white p-4">
@@ -218,6 +231,13 @@ export default function StudentClassesPage() {
           </Tabs.Root>
         </Flex>
       </Container>
+
+      {/* Join Private Class Dialog */}
+      <JoinClassDialog
+        open={isJoinDialogOpen}
+        onOpenChange={setIsJoinDialogOpen}
+        onSuccess={fetchClasses}
+      />
     </div>
   );
 }

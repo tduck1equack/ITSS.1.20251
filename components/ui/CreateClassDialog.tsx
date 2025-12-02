@@ -8,8 +8,20 @@ import {
   Text,
   TextField,
   TextArea,
+  Checkbox,
 } from "@radix-ui/themes";
-import { FiPlus } from "react-icons/fi";
+import { FiPlus, FiLock } from "react-icons/fi";
+
+// Generate random 8-character class code
+function generateClassCode(): string {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#@$&*!";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
 interface CreateClassDialogProps {
   open: boolean;
@@ -20,6 +32,8 @@ interface CreateClassDialogProps {
     description: string;
     semester: string;
     year: number;
+    isPrivate: boolean;
+    joinCode?: string;
   }) => Promise<void>;
 }
 
@@ -29,22 +43,33 @@ export function CreateClassDialog({
   onSubmit,
 }: CreateClassDialogProps) {
   const [formData, setFormData] = useState({
-    code: "",
     name: "",
     description: "",
     semester: "",
     year: new Date().getFullYear(),
+    isPrivate: false,
+    joinCode: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+    const submitData: any = {
+      ...formData,
+      code: generateClassCode(), // Auto-generate class code
+    };
+    if (submitData.isPrivate) {
+      submitData.joinCode = generateClassCode(); // Auto-generate join code for private classes
+    } else {
+      delete submitData.joinCode;
+    }
+    await onSubmit(submitData);
     setFormData({
-      code: "",
       name: "",
       description: "",
       semester: "",
       year: new Date().getFullYear(),
+      isPrivate: false,
+      joinCode: "",
     });
   };
 
@@ -57,19 +82,6 @@ export function CreateClassDialog({
         </Dialog.Description>
         <form onSubmit={handleSubmit}>
           <Flex direction="column" gap="3">
-            <label>
-              <Text as="div" size="2" mb="1" weight="bold">
-                Mã lớp <span className="text-red-500">*</span>
-              </Text>
-              <TextField.Root
-                placeholder="VD: CS101-2024"
-                value={formData.code}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value })
-                }
-                required
-              />
-            </label>
             <label>
               <Text as="div" size="2" mb="1" weight="bold">
                 Tên lớp <span className="text-red-500">*</span>
@@ -133,6 +145,29 @@ export function CreateClassDialog({
                 />
               </label>
             </Flex>
+            <label>
+              <Flex align="center" gap="2">
+                <Checkbox
+                  checked={formData.isPrivate}
+                  onCheckedChange={(checked) =>
+                    setFormData({
+                      ...formData,
+                      isPrivate: checked === true,
+                    })
+                  }
+                />
+                <Flex align="center" gap="2">
+                  <FiLock size={14} />
+                  <Text size="2" weight="bold">
+                    Lớp riêng tư
+                  </Text>
+                </Flex>
+              </Flex>
+              <Text size="1" className="text-gray-500 ml-6 mt-1 block">
+                Lớp riêng tư không hiển thị công khai, chỉ tham gia bằng mã lớp.
+                Mã tham gia sẽ được tạo tự động.
+              </Text>
+            </label>
           </Flex>
           <Flex gap="3" mt="4" justify="end">
             <Dialog.Close>

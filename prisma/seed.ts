@@ -54,28 +54,34 @@ function generateVietnameseName(): string {
 async function main() {
   console.log("🌱 Bắt đầu khởi tạo cơ sở dữ liệu...");
 
-  // Clear existing data in correct order
-  await prisma.postVote.deleteMany();
-  await prisma.notificationSubscription.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.notificationCategory.deleteMany();
-  await prisma.attendance.deleteMany();
-  await prisma.comment.deleteMany();
-  await prisma.postAttachment.deleteMany();
-  await prisma.post.deleteMany();
-  await prisma.assignmentSubmissionAttachment.deleteMany();
-  await prisma.assignmentSubmission.deleteMany();
-  await prisma.assignmentAttachment.deleteMany();
-  await prisma.assignment.deleteMany();
-  await prisma.learningMaterial.deleteMany();
-  await prisma.groupMember.deleteMany();
-  await prisma.group.deleteMany();
-  await prisma.classEnrollment.deleteMany();
-  await prisma.classTeacher.deleteMany();
-  await prisma.class.deleteMany();
-  await prisma.user.deleteMany();
-
-  console.log("🗑️  Đã xóa dữ liệu cũ");
+  // Clear existing data in correct order (skip if tables don't exist)
+  try {
+    await prisma.commentVote.deleteMany();
+    await prisma.postVote.deleteMany();
+    await prisma.commentAttachment.deleteMany();
+    await prisma.classAttachment.deleteMany();
+    await prisma.notificationSubscription.deleteMany();
+    await prisma.notification.deleteMany();
+    await prisma.notificationCategory.deleteMany();
+    await prisma.attendance.deleteMany();
+    await prisma.comment.deleteMany();
+    await prisma.postAttachment.deleteMany();
+    await prisma.post.deleteMany();
+    await prisma.assignmentSubmissionAttachment.deleteMany();
+    await prisma.assignmentSubmission.deleteMany();
+    await prisma.assignmentAttachment.deleteMany();
+    await prisma.assignment.deleteMany();
+    await prisma.learningMaterial.deleteMany();
+    await prisma.groupMember.deleteMany();
+    await prisma.group.deleteMany();
+    await prisma.classEnrollment.deleteMany();
+    await prisma.classTeacher.deleteMany();
+    await prisma.class.deleteMany();
+    await prisma.user.deleteMany();
+    console.log("🗑️  Đã xóa dữ liệu cũ");
+  } catch (error) {
+    console.log("ℹ️  Bỏ qua xóa dữ liệu (có thể là lần chạy đầu tiên)");
+  }
 
   // ========================================
   // CREATE USERS
@@ -146,6 +152,22 @@ async function main() {
       email: "phanthingoc@hust.edu.vn",
       bio: "Giảng viên bộ môn Công nghệ Phần mềm. Chuyên môn: Phát triển ứng dụng Di động",
     },
+    // Additional demo teachers for private classes
+    {
+      name: "TS. Vương Anh Tuấn",
+      email: "vuonganhtuan@hust.edu.vn",
+      bio: "Giảng viên bộ môn AI & Data Science. Chuyên môn: Deep Learning và Computer Vision",
+    },
+    {
+      name: "ThS. Đinh Thị Mai",
+      email: "dinhthimai@hust.edu.vn",
+      bio: "Giảng viên bộ môn IoT & Embedded Systems. Chuyên môn: Internet of Things",
+    },
+    {
+      name: "TS. Lương Văn Khoa",
+      email: "luongvankhoa@hust.edu.vn",
+      bio: "Giảng viên bộ môn Cybersecurity. Chuyên môn: An ninh mạng và Ethical Hacking",
+    },
   ];
 
   const teachers = await Promise.all(
@@ -162,27 +184,77 @@ async function main() {
     )
   );
 
-  console.log("✅ Đã tạo 10 giảng viên");
+  console.log("✅ Đã tạo 13 giảng viên");
 
-  // Students - 1 demo student + 99 random students
+  // Students - 4 demo students + 96 random students
 
-  // Demo student (always created for demo purposes)
-  const demoStudent = await prisma.user.create({
-    data: {
-      email: "nguyenminhan20210001@sis.hust.edu.vn",
-      password: "Student@2025",
-      name: "Nguyễn Minh An",
-      role: "STUDENT",
-      bio: "Sinh viên K66 - CNTT, MSSV: 20210001",
-    },
-  });
+  // Demo students (for testing private classes and features)
+  const demoStudents = await Promise.all([
+    prisma.user.create({
+      data: {
+        email: "nguyenminhan20210001@sis.hust.edu.vn",
+        password: "Student@2025",
+        name: "Nguyễn Minh An",
+        studentCode: "20210001",
+        role: "STUDENT",
+        bio: "Sinh viên K66 - CNTT, MSSV: 20210001",
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: "tranvanbao20210002@sis.hust.edu.vn",
+        password: "Student@2025",
+        name: "Trần Văn Bảo",
+        studentCode: "20210002",
+        role: "STUDENT",
+        bio: "Sinh viên K66 - CNTT, MSSV: 20210002",
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: "lethichau20220010@sis.hust.edu.vn",
+        password: "Student@2025",
+        name: "Lê Thị Châu",
+        studentCode: "20220010",
+        role: "STUDENT",
+        bio: "Sinh viên K67 - CNTT, MSSV: 20220010",
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: "phamvandung202510001@sis.hust.edu.vn",
+        password: "Student@2025",
+        name: "Phạm Văn Dũng",
+        studentCode: "202510001",
+        role: "STUDENT",
+        bio: "Sinh viên K70 - CNTT, MSSV: 202510001",
+      },
+    }),
+  ]);
 
-  console.log("✅ Đã tạo sinh viên demo");
+  console.log("✅ Đã tạo 4 sinh viên demo");
 
-  // Random students (99 students)
+  // Random students (96 students)
+  // Random students (96 students)
   const randomStudents = await Promise.all(
-    Array.from({ length: 99 }, (_, i) => {
-      const studentId = 20210002 + i; // Start from 20210002
+    Array.from({ length: 96 }, (_, i) => {
+      // Mix of 2021-2024 students (8 digits) and 2025 students (9 digits)
+      const isNew2025Student = i >= 77; // Last 19 students are 2025
+      let studentCode: string;
+      let year: number;
+
+      if (isNew2025Student) {
+        year = 2025;
+        const sequence = 10002 + (i - 77); // 202510002 to 202510020 (after 4 demo students)
+        studentCode = `${year}${sequence}`;
+      } else {
+        // Randomly distribute across 2021-2024
+        year = 2021 + Math.floor(i / 19); // Groups of ~19 per year
+        const sequence = 3 + (i % 19) + Math.floor(i / 19) * 19;
+        const paddedSeq = sequence.toString().padStart(4, "0");
+        studentCode = `${year}${paddedSeq}`;
+      }
+
       const name = generateVietnameseName();
       const nameSlug = name
         .toLowerCase()
@@ -190,27 +262,28 @@ async function main() {
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/đ/g, "d")
         .replace(/\s+/g, "");
-      const email = `${nameSlug}${studentId}@sis.hust.edu.vn`;
+      const email = `${nameSlug}${studentCode}@sis.hust.edu.vn`;
 
       return prisma.user.create({
         data: {
           email,
           password: "Student@2025",
           name,
+          studentCode,
           role: "STUDENT",
-          bio: `Sinh viên K66 - CNTT, MSSV: ${studentId}`,
+          bio: `Sinh viên K${year - 2000} - CNTT, MSSV: ${studentCode}`,
         },
       });
     })
   );
 
-  // Combine demo student with random students
-  const students = [demoStudent, ...randomStudents];
+  // Combine demo students with random students
+  const students = [...demoStudents, ...randomStudents];
 
-  console.log("✅ Đã tạo 100 sinh viên (1 demo + 99 ngẫu nhiên)");
+  console.log("✅ Đã tạo 100 sinh viên (4 demo + 96 ngẫu nhiên)");
 
   // ========================================
-  // CREATE CLASSES - 7 classes
+  // CREATE CLASSES - 7 public classes + 6 private classes
   // ========================================
 
   const classData = [
@@ -223,6 +296,7 @@ async function main() {
       year: 2024,
       teacherIds: [0, 1],
       studentCount: 35,
+      isPrivate: false,
     },
     {
       code: "IT3190",
@@ -233,6 +307,7 @@ async function main() {
       year: 2024,
       teacherIds: [1, 7],
       studentCount: 40,
+      isPrivate: false,
     },
     {
       code: "IT4785",
@@ -243,6 +318,7 @@ async function main() {
       year: 2024,
       teacherIds: [9],
       studentCount: 30,
+      isPrivate: false,
     },
     {
       code: "IT3100",
@@ -253,6 +329,7 @@ async function main() {
       year: 2024,
       teacherIds: [2, 6],
       studentCount: 45,
+      isPrivate: false,
     },
     {
       code: "IT3080",
@@ -263,6 +340,7 @@ async function main() {
       year: 2024,
       teacherIds: [4],
       studentCount: 38,
+      isPrivate: false,
     },
     {
       code: "IT4895",
@@ -273,6 +351,7 @@ async function main() {
       year: 2024,
       teacherIds: [3],
       studentCount: 25,
+      isPrivate: false,
     },
     {
       code: "IT4210",
@@ -282,6 +361,80 @@ async function main() {
       year: 2024,
       teacherIds: [5, 8],
       studentCount: 32,
+      isPrivate: false,
+    },
+    // Private classes
+    {
+      code: "AI2025",
+      name: "Trí tuệ nhân tạo nâng cao",
+      description:
+        "Khóa học chuyên sâu về AI: Neural Networks, Computer Vision, NLP, và các ứng dụng thực tế trong nghiên cứu.",
+      semester: "Học kỳ 2024.2",
+      year: 2024,
+      teacherIds: [3, 10],
+      studentCount: 20,
+      isPrivate: true,
+      joinCode: "AI25#7XQ",
+    },
+    {
+      code: "ML2025",
+      name: "Học máy và Deep Learning",
+      description:
+        "Khóa học nâng cao về Machine Learning: Deep Learning, CNNs, RNNs, Transformers, và các mô hình state-of-the-art.",
+      semester: "Học kỳ 2024.2",
+      year: 2024,
+      teacherIds: [10],
+      studentCount: 18,
+      isPrivate: true,
+      joinCode: "ML@25Y9K",
+    },
+    {
+      code: "DS2025",
+      name: "Khoa học dữ liệu",
+      description:
+        "Phân tích dữ liệu lớn, Data Mining, Visualization, và xây dựng Data Pipeline với Python và các công cụ hiện đại.",
+      semester: "Học kỳ 2024.2",
+      year: 2024,
+      teacherIds: [3],
+      studentCount: 22,
+      isPrivate: true,
+      joinCode: "DS#25Z3M",
+    },
+    {
+      code: "WEB2025",
+      name: "Phát triển Web Full-stack",
+      description:
+        "Khóa học thực chiến: xây dựng ứng dụng web hoàn chỉnh với Next.js, TypeScript, Prisma, và deployment trên cloud.",
+      semester: "Học kỳ 2024.2",
+      year: 2024,
+      teacherIds: [1],
+      studentCount: 25,
+      isPrivate: true,
+      joinCode: "WEB@5ABP",
+    },
+    {
+      code: "CYBER2025",
+      name: "An ninh mạng",
+      description:
+        "Khóa học chuyên sâu về Cybersecurity: Penetration Testing, Ethical Hacking, Forensics, và phòng chống tấn công mạng.",
+      semester: "Học kỳ 2024.2",
+      year: 2024,
+      teacherIds: [5, 12],
+      studentCount: 16,
+      isPrivate: true,
+      joinCode: "CYB#R925",
+    },
+    {
+      code: "IOT2025",
+      name: "Internet of Things",
+      description:
+        "Thiết kế và phát triển hệ thống IoT: Arduino, Raspberry Pi, MQTT, Cloud IoT, và các ứng dụng thực tế.",
+      semester: "Học kỳ 2024.2",
+      year: 2024,
+      teacherIds: [11],
+      studentCount: 15,
+      isPrivate: true,
+      joinCode: "IOT@2025",
     },
   ];
 
@@ -289,6 +442,8 @@ async function main() {
   let studentOffset = 0;
 
   for (const classInfo of classData) {
+    const creatorTeacherId = teachers[classInfo.teacherIds[0]].id;
+
     const newClass = await prisma.class.create({
       data: {
         code: classInfo.code,
@@ -297,6 +452,9 @@ async function main() {
         semester: classInfo.semester,
         year: classInfo.year,
         status: "ACTIVE",
+        isPrivate: classInfo.isPrivate || false,
+        joinCode: classInfo.joinCode || null,
+        createdBy: creatorTeacherId,
       },
     });
 
@@ -336,7 +494,7 @@ async function main() {
     classes.push({ ...newClass, teacherIds: classInfo.teacherIds });
   }
 
-  console.log("✅ Đã tạo 7 lớp học");
+  console.log("✅ Đã tạo 13 lớp học (7 công khai + 6 riêng tư)");
 
   // ========================================
   // CREATE POSTS AND COMMENTS
@@ -421,11 +579,28 @@ async function main() {
           }`,
           type: postType,
           pinned: i === 0 && postType === "ANNOUNCEMENT",
+          attachments:
+            postType === "MATERIAL" && Math.random() > 0.5
+              ? {
+                  create: [
+                    {
+                      fileName: `${classItem.code}_lecture_${i + 1}.pdf`,
+                      fileUrl: `https://example.com/files/${classItem.code}_${
+                        i + 1
+                      }.pdf`,
+                      fileSize:
+                        1024 * 1024 * (1 + Math.floor(Math.random() * 5)),
+                      mimeType: "application/pdf",
+                    },
+                  ],
+                }
+              : undefined,
         },
       });
 
       // Create 2-6 comments per post
       const numComments = 2 + Math.floor(Math.random() * 5);
+      const createdComments = [];
 
       for (let j = 0; j < numComments; j++) {
         const isTeacherComment = Math.random() > 0.7;
@@ -435,7 +610,7 @@ async function main() {
           : classStudents[Math.floor(Math.random() * classStudents.length)]
               .student;
 
-        await prisma.comment.create({
+        const comment = await prisma.comment.create({
           data: {
             postId: post.id,
             authorId: commenter.id,
@@ -445,9 +620,31 @@ async function main() {
               ],
           },
         });
+
+        createdComments.push(comment);
+
+        // Add votes to some comments
+        if (Math.random() > 0.4) {
+          const numCommentVoters = Math.floor(
+            Math.random() * Math.min(10, classStudents.length)
+          );
+          const commentVoters = [...classStudents]
+            .sort(() => Math.random() - 0.5)
+            .slice(0, numCommentVoters);
+
+          for (const voter of commentVoters) {
+            await prisma.commentVote.create({
+              data: {
+                commentId: comment.id,
+                userId: voter.student.id,
+                voteType: Math.random() > 0.2 ? "UPVOTE" : "DOWNVOTE",
+              },
+            });
+          }
+        }
       }
 
-      // Add votes
+      // Add votes to post
       const numVoters = Math.floor(
         Math.random() * Math.min(15, classStudents.length)
       );
@@ -464,6 +661,22 @@ async function main() {
           },
         });
       }
+    }
+
+    // Add some direct class attachments
+    if (Math.random() > 0.5) {
+      const uploader =
+        classTeachers[Math.floor(Math.random() * classTeachers.length)].teacher;
+      await prisma.classAttachment.create({
+        data: {
+          classId: classItem.id,
+          uploaderId: uploader.id,
+          fileName: `${classItem.code}_syllabus.pdf`,
+          fileUrl: `https://example.com/files/${classItem.code}_syllabus.pdf`,
+          fileSize: 1024 * 512,
+          mimeType: "application/pdf",
+        },
+      });
     }
   }
 

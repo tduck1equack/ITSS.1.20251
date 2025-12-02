@@ -28,14 +28,17 @@ import {
   FiSend,
   FiLogOut,
   FiUserPlus,
+  FiPlus,
 } from "react-icons/fi";
 import DashboardNavBar from "@/components/ui/DashboardNavBar";
 import ClassHeader from "@/components/ui/ClassHeader";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { PostCard } from "@/components/ui/PostCard";
+import { CreatePostDialog } from "@/components/ui/CreatePostDialog";
 import { GroupCard } from "@/components/ui/GroupCard";
 import { studentTabs } from "@/components/ui/StudentDashboardNav";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 
 interface ClassData {
   id: string;
@@ -56,7 +59,7 @@ interface ClassData {
       student: {
         id: string;
         name: string;
-        email: string;
+        studentCode: string | null;
         avatar: string | null;
       };
     }>;
@@ -81,11 +84,13 @@ export default function StudentClassDetailPage({
   const { id } = use(params);
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [classData, setClassData] = useState<ClassData | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
+  const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
 
   const fetchClassData = async () => {
     try {
@@ -111,10 +116,10 @@ export default function StudentClassDetailPage({
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "STUDENT")) {
       router.push("/login");
-    } else if (!isLoading && user) {
+    } else if (!isLoading && user && !classData) {
       fetchClassData();
     }
-  }, [user, isLoading, id]);
+  }, [user, isLoading]);
 
   const handleVote = async (
     postId: string,
@@ -126,13 +131,16 @@ export default function StudentClassDetailPage({
         voteType,
       });
       fetchClassData();
+      toast.success(
+        `Đã ${voteType === "UPVOTE" ? "thích" : "không thích"} bài viết`
+      );
     } catch (error) {
       console.error("Failed to vote:", error);
+      toast.error("Không thể bình chọn bài viết");
     }
   };
 
-  const handleComment = async (postId: string) => {
-    const content = commentText[postId];
+  const handleComment = async (postId: string, content: string) => {
     if (!content?.trim()) return;
 
     try {
@@ -140,10 +148,31 @@ export default function StudentClassDetailPage({
         authorId: user?.id,
         content,
       });
-      setCommentText({ ...commentText, [postId]: "" });
       fetchClassData();
+      toast.success("Đã thêm bình luận");
     } catch (error) {
       console.error("Failed to comment:", error);
+      toast.error("Không thể thêm bình luận");
+    }
+  };
+
+  const handleCreatePost = async (formData: {
+    title: string;
+    content: string;
+    type: string;
+  }) => {
+    try {
+      await axios.post(`/api/classes/${id}/posts`, {
+        ...formData,
+        authorId: user?.id,
+      });
+      setIsPostDialogOpen(false);
+      toast.success("Đã đăng bài viết", "Bài viết đã được tạo thành công");
+      fetchClassData();
+    } catch (error) {
+      console.error("Failed to create post:", error);
+      toast.error("Lỗi", "Không thể tạo bài viết");
+      throw error;
     }
   };
 
@@ -151,9 +180,11 @@ export default function StudentClassDetailPage({
     try {
       await axios.delete(`/api/classes/${id}/enroll?studentId=${user?.id}`);
       setIsExitDialogOpen(false);
-      fetchClassData();
+      toast.success("Đã rời khỏi lớp học");
+      router.push("/dashboard/student/classes");
     } catch (error) {
       console.error("Failed to exit class:", error);
+      toast.error("Không thể rời khỏi lớp học");
     }
   };
 
@@ -163,8 +194,10 @@ export default function StudentClassDetailPage({
         studentId: user?.id,
       });
       fetchClassData();
+      toast.success("Đã tham gia lớp học");
     } catch (error) {
       console.error("Failed to join class:", error);
+      toast.error("Không thể tham gia lớp học");
     }
   };
 
@@ -241,6 +274,22 @@ export default function StudentClassDetailPage({
             {isEnrolled && (
               <Tabs.Content value="posts">
                 <Flex direction="column" gap="4" className="mt-6">
+                  <Flex justify="between" align="center">
+                    <Heading size="6">Bài viết trong lớp</Heading>
+                    <Button
+                      className="bg-mint-500 hover:bg-mint-600"
+                      onClick={() => setIsPostDialogOpen(true)}
+                    >
+                      <FiPlus size={16} /> Tạo bài viết
+                    </Button>
+                  </Flex>
+
+                  <CreatePostDialog
+                    open={isPostDialogOpen}
+                    onOpenChange={setIsPostDialogOpen}
+                    onSubmit={handleCreatePost}
+                  />
+
                   {classData.posts && classData.posts.length > 0 ? (
                     <Flex direction="column" gap="3">
                       {classData.posts.map((post) => {
@@ -252,14 +301,10 @@ export default function StudentClassDetailPage({
                           <PostCard
                             key={post.id}
                             post={post}
-                            role="student"
+                            currentUserId={user.id}
                             userVote={userVote}
                             onVote={handleVote}
                             onComment={handleComment}
-                            commentText={commentText[post.id] || ""}
-                            onCommentChange={(postId, text) =>
-                              setCommentText({ ...commentText, [postId]: text })
-                            }
                           />
                         );
                       })}

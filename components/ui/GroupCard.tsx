@@ -10,7 +10,7 @@ interface GroupCardProps {
       student: {
         id: string;
         name: string;
-        email: string;
+        studentCode: string | null;
         avatar: string | null;
       };
     }>;
@@ -85,14 +85,15 @@ export function GroupCard({ group, classCode, className }: GroupCardProps) {
                   fallback={member.student.name.charAt(0)}
                   className="bg-mint-500"
                 />
-                <div>
-                  <Text size="2" weight="bold">
-                    {member.student.name}
-                  </Text>
-                  <Text size="1" className="text-gray-500">
-                    {member.student.email}
-                  </Text>
-                </div>
+                <Text size="2" weight="bold">
+                  {member.student.name}
+                  {member.student.studentCode && (
+                    <span className="text-gray-500 font-normal">
+                      {" "}
+                      ({member.student.studentCode})
+                    </span>
+                  )}
+                </Text>
               </Flex>
             ))}
           </Flex>

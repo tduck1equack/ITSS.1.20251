@@ -46,11 +46,12 @@ export async function GET(request: NextRequest) {
         isTeaching: true,
       }));
 
-      // Get all available classes (not teaching)
+      // Get all available classes (not teaching) - exclude private classes
       const teachingClassIds = teachingClasses.map((c) => c.id);
       const availableClasses = await prisma.class.findMany({
         where: {
           status: "ACTIVE",
+          isPrivate: false, // Only show public classes
           id: { notIn: teachingClassIds },
         },
         include: {
@@ -118,11 +119,12 @@ export async function GET(request: NextRequest) {
         isEnrolled: true,
       }));
 
-      // Get available classes (not enrolled)
+      // Get available classes (not enrolled) - exclude private classes
       const enrolledClassIds = enrolled.map((c) => c.id);
       const availableClasses = await prisma.class.findMany({
         where: {
           status: "ACTIVE",
+          isPrivate: false, // Only show public classes
           id: { notIn: enrolledClassIds },
         },
         include: {
@@ -170,13 +172,44 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { code, name, description, semester, year, teacherId } = body;
+    const {
+      code,
+      name,
+      description,
+      semester,
+      year,
+      teacherId,
+      isPrivate,
+      joinCode,
+    } = body;
 
     if (!code || !name || !teacherId) {
       return NextResponse.json(
         { error: "Code, name, and teacherId are required" },
         { status: 400 }
       );
+    }
+
+    // Validate joinCode if class is private
+    if (isPrivate) {
+      if (!joinCode || joinCode.length !== 8) {
+        return NextResponse.json(
+          { error: "Private classes require an 8-character join code" },
+          { status: 400 }
+        );
+      }
+
+      // Check if joinCode already exists
+      const existingCode = await prisma.class.findUnique({
+        where: { joinCode },
+      });
+
+      if (existingCode) {
+        return NextResponse.json(
+          { error: "Join code already exists" },
+          { status: 409 }
+        );
+      }
     }
 
     // Check if class code already exists
@@ -200,6 +233,9 @@ export async function POST(request: NextRequest) {
         semester,
         year,
         status: "ACTIVE",
+        createdBy: teacherId,
+        isPrivate: isPrivate || false,
+        joinCode: isPrivate ? joinCode : null,
       },
     });
 

@@ -13,10 +13,11 @@ import {
   TextField,
   Tabs,
 } from "@radix-ui/themes";
-import { FiBook, FiPlus, FiTrash2, FiSearch } from "react-icons/fi";
+import { FiBook, FiPlus, FiTrash2, FiSearch, FiKey } from "react-icons/fi";
 import DashboardNavBar from "@/components/ui/DashboardNavBar";
 import ClassCard from "@/components/ui/ClassCard";
 import { CreateClassDialog } from "@/components/ui/CreateClassDialog";
+import { JoinClassDialog } from "@/components/ui/JoinClassDialog";
 import { teacherTabs } from "@/components/ui/TeacherDashboardNav";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -41,6 +42,7 @@ export default function TeacherClassesPage() {
   const [availableClasses, setAvailableClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -143,12 +145,22 @@ export default function TeacherClassesPage() {
                 Quản lý các lớp học bạn đang giảng dạy
               </Text>
             </div>
-            <Button
-              className="bg-mint-500 hover:bg-mint-600 text-white"
-              onClick={() => setIsCreateDialogOpen(true)}
-            >
-              <FiPlus size={18} /> Tạo lớp mới
-            </Button>
+            <Flex gap="3">
+              <Button
+                size="3"
+                className="bg-mint-500 hover:bg-mint-600 text-white"
+                onClick={() => setIsJoinDialogOpen(true)}
+              >
+                <FiKey size={18} /> Tham gia lớp riêng tư
+              </Button>
+              <Button
+                size="3"
+                className="bg-mint-500 hover:bg-mint-600 text-white"
+                onClick={() => setIsCreateDialogOpen(true)}
+              >
+                <FiPlus size={18} /> Tạo lớp mới
+              </Button>
+            </Flex>
           </Flex>
 
           {/* Create Class Dialog */}
@@ -209,15 +221,6 @@ export default function TeacherClassesPage() {
                           href={`/dashboard/teacher/classes/${classItem.id}`}
                           isEnrolled={true}
                         />
-                        <Button
-                          variant="soft"
-                          color="red"
-                          size="1"
-                          className="absolute top-2 right-2"
-                          onClick={() => handleDeleteClass(classItem.id)}
-                        >
-                          <FiTrash2 size={14} />
-                        </Button>
                       </div>
                     ))}
                   </div>
@@ -259,6 +262,13 @@ export default function TeacherClassesPage() {
           </Tabs.Root>
         </Flex>
       </Container>
+
+      {/* Join Class Dialog */}
+      <JoinClassDialog
+        open={isJoinDialogOpen}
+        onOpenChange={setIsJoinDialogOpen}
+        onSuccess={fetchClasses}
+      />
     </div>
   );
 }

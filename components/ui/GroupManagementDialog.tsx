@@ -18,6 +18,7 @@ interface Student {
   id: string;
   name: string;
   email: string;
+  studentCode?: string | null;
   avatar: string | null;
 }
 
@@ -46,24 +47,32 @@ export function GroupManagementDialog({
   onSave,
 }: GroupManagementDialogProps) {
   const [groups, setGroups] = useState<Group[]>([]);
+  const [initialGroups, setInitialGroups] = useState<Group[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [numGroups, setNumGroups] = useState(3);
+  const [numGroupsInput, setNumGroupsInput] = useState("3");
+  const [validationError, setValidationError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (existingGroups.length > 0) {
-      setGroups(
-        existingGroups.map((g) => ({
-          name: g.name,
-          memberIds: g.members.map((m) => m.student.id),
-        }))
-      );
+      const groupsData = existingGroups.map((g) => ({
+        name: g.name,
+        memberIds: g.members.map((m) => m.student.id),
+      }));
+      setGroups(groupsData);
+      setInitialGroups(groupsData);
     } else {
       setGroups([]);
+      setInitialGroups([]);
     }
+    // Reset validation error when dialog opens
+    setValidationError("");
+    setNumGroupsInput("3");
+    setNumGroups(3);
   }, [existingGroups, open]);
 
-  const unassignedStudents = students.filter(
+  const unassignedStudents = (students || []).filter(
     (student) => !groups.some((g) => g.memberIds.includes(student.id))
   );
 
@@ -72,24 +81,92 @@ export function GroupManagementDialog({
   );
 
   const handleRandomDivide = () => {
-    const shuffled = [...students].sort(() => Math.random() - 0.5);
-    const groupSize = Math.ceil(students.length / numGroups);
-    const newGroups: Group[] = [];
-
-    for (let i = 0; i < numGroups; i++) {
-      const start = i * groupSize;
-      const end = start + groupSize;
-      const members = shuffled.slice(start, end);
-
-      if (members.length > 0) {
-        newGroups.push({
-          name: `Nhóm ${i + 1}`,
-          memberIds: members.map((m) => m.id),
-        });
-      }
+    // Validate input
+    if (!numGroupsInput.trim()) {
+      setValidationError("Vui lòng nhập số lượng nhóm");
+      return;
     }
 
+    // Use the already validated numGroups state
+    if (numGroups < 1) {
+      setValidationError("Số lượng nhóm phải là số nguyên dương");
+      return;
+    }
+
+    // Clear validation error
+    setValidationError("");
+
+    // Check if students exist
+    if (!students || students.length === 0) {
+      setValidationError("Không có sinh viên để phân nhóm");
+      return;
+    }
+
+    // Adjust number of groups if it exceeds student count
+    const actualNumGroups = Math.min(numGroups, students.length);
+
+    // Show warning if adjusted
+    if (numGroups > students.length) {
+      setValidationError(
+        `Số nhóm (${numGroups}) vượt quá số sinh viên (${students.length}). Sẽ tạo ${actualNumGroups} nhóm.`
+      );
+    }
+
+    // Fisher-Yates shuffle algorithm for proper random distribution
+    const shuffled = [...students];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // Distribute students evenly across groups
+    const newGroups: Group[] = Array.from(
+      { length: actualNumGroups },
+      (_, i) => ({
+        name: `Nhóm ${i + 1}`,
+        memberIds: [],
+      })
+    );
+
+    // Distribute students round-robin to ensure all groups get created
+    shuffled.forEach((student, index) => {
+      const groupIndex = index % actualNumGroups;
+      newGroups[groupIndex].memberIds.push(student.id);
+    });
+
     setGroups(newGroups);
+    setNumGroups(actualNumGroups);
+  };
+
+  const handleNumGroupsChange = (value: string) => {
+    setNumGroupsInput(value);
+
+    // Check for invalid characters or multiple numbers
+    if (value.trim() === "") {
+      setValidationError("");
+      return;
+    }
+
+    // Check if input contains multiple numbers separated by comma, space, etc.
+    if (/[,\s]/.test(value.trim())) {
+      setValidationError("Đầu vào không hợp lệ! Chỉ nhập một số nguyên dương.");
+      return;
+    }
+
+    // Check if input contains non-numeric characters (except leading/trailing spaces)
+    if (!/^\d+$/.test(value.trim())) {
+      setValidationError("Đầu vào không hợp lệ! Chỉ nhập số nguyên dương.");
+      return;
+    }
+
+    const parsed = parseInt(value.trim());
+    if (isNaN(parsed) || parsed < 1) {
+      setValidationError("Đầu vào không hợp lệ! Số phải lớn hơn 0.");
+      return;
+    }
+
+    setValidationError("");
+    setNumGroups(parsed);
   };
 
   const handleAddGroup = () => {
@@ -144,7 +221,31 @@ export function GroupManagementDialog({
   };
 
   const getStudent = (studentId: string) =>
-    students.find((s) => s.id === studentId);
+    (students || []).find((s) => s.id === studentId);
+
+  // Calculate changes between initial and current groups
+  const getGroupChanges = () => {
+    const oldGroupNames = initialGroups.map((g) => g.name);
+    const newGroupNames = groups.map((g) => g.name);
+
+    const addedGroups = newGroupNames.filter(
+      (name) => !oldGroupNames.includes(name)
+    );
+    const deletedGroups = oldGroupNames.filter(
+      (name) => !newGroupNames.includes(name)
+    );
+    const keptGroups = newGroupNames.filter((name) =>
+      oldGroupNames.includes(name)
+    );
+
+    return { addedGroups, deletedGroups, keptGroups };
+  };
+
+  const { addedGroups, deletedGroups, keptGroups } = getGroupChanges();
+  const hasChanges =
+    addedGroups.length > 0 ||
+    deletedGroups.length > 0 ||
+    JSON.stringify(groups) !== JSON.stringify(initialGroups);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -157,6 +258,34 @@ export function GroupManagementDialog({
             <Tabs.Trigger value="manual">Thủ công</Tabs.Trigger>
           </Tabs.List>
 
+          {/* Change Indicator */}
+          {hasChanges && (
+            <Card className="mt-4 p-3 bg-blue-50 border-blue-300">
+              <Flex direction="column" gap="2">
+                <Text size="2" weight="bold" className="text-blue-900">
+                  Thay đổi chưa lưu:
+                </Text>
+                {addedGroups.length > 0 && (
+                  <Text size="2" className="text-green-700">
+                    ✓ Thêm mới: {addedGroups.join(", ")}
+                  </Text>
+                )}
+                {deletedGroups.length > 0 && (
+                  <Text size="2" className="text-red-700">
+                    ✗ Xóa: {deletedGroups.join(", ")}
+                  </Text>
+                )}
+                {addedGroups.length === 0 &&
+                  deletedGroups.length === 0 &&
+                  keptGroups.length > 0 && (
+                    <Text size="2" className="text-blue-700">
+                      ⟳ Đã chỉnh sửa {keptGroups.length} nhóm
+                    </Text>
+                  )}
+              </Flex>
+            </Card>
+          )}
+
           {/* Random Tab */}
           <Tabs.Content value="random">
             <Flex direction="column" gap="4" className="mt-4">
@@ -166,13 +295,10 @@ export function GroupManagementDialog({
                     Số lượng nhóm
                   </Text>
                   <TextField.Root
-                    type="number"
-                    min="1"
-                    max={students.length}
-                    value={numGroups.toString()}
-                    onChange={(e) =>
-                      setNumGroups(parseInt(e.target.value) || 1)
-                    }
+                    type="text"
+                    placeholder="Nhập số nhóm..."
+                    value={numGroupsInput}
+                    onChange={(e) => handleNumGroupsChange(e.target.value)}
                   />
                 </label>
                 <Button
@@ -182,6 +308,29 @@ export function GroupManagementDialog({
                   <FiShuffle size={16} /> Chia ngẫu nhiên
                 </Button>
               </Flex>
+
+              {validationError && (
+                <Card
+                  className={`p-3 ${
+                    validationError.includes("vượt quá") ||
+                    validationError.includes("Sẽ tạo")
+                      ? "bg-yellow-50 border-yellow-300"
+                      : "bg-red-50 border-red-300"
+                  }`}
+                >
+                  <Text
+                    size="2"
+                    className={
+                      validationError.includes("vượt quá") ||
+                      validationError.includes("Sẽ tạo")
+                        ? "text-yellow-700"
+                        : "text-red-700"
+                    }
+                  >
+                    {validationError}
+                  </Text>
+                </Card>
+              )}
 
               {groups.length > 0 && (
                 <Card className="bg-gray-50 p-4">
@@ -325,9 +474,12 @@ export function GroupManagementDialog({
                             <div className="flex-1">
                               <Text size="2" weight="bold">
                                 {student.name}
-                              </Text>
-                              <Text size="1" className="text-gray-500">
-                                {student.email}
+                                {student.studentCode && (
+                                  <span className="text-gray-500 font-normal">
+                                    {" "}
+                                    ({student.studentCode})
+                                  </span>
+                                )}
                               </Text>
                             </div>
                             {groups.length > 0 && (

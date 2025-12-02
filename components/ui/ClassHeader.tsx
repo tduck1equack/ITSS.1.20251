@@ -12,6 +12,8 @@ import {
   FiUsers,
   FiFileText,
   FiMessageSquare,
+  FiLock,
+  FiGlobe,
 } from "react-icons/fi";
 import { ReactNode } from "react";
 
@@ -20,6 +22,7 @@ interface ClassHeaderProps {
     code: string;
     name: string;
     description: string | null;
+    isPrivate?: boolean;
     teachers?: Array<{
       teacher: { id: string; name: string; avatar: string | null };
     }>;
@@ -53,6 +56,15 @@ export default function ClassHeader({
               <Badge color="mint" size="2">
                 {classData.code}
               </Badge>
+              {classData.isPrivate ? (
+                <Badge color="purple" size="2">
+                  <FiLock size={12} /> Riêng tư
+                </Badge>
+              ) : (
+                <Badge color="blue" size="2">
+                  <FiGlobe size={12} /> Công khai
+                </Badge>
+              )}
               {isEnrolled ? (
                 <Badge color="green" size="2">
                   <FiCheckCircle size={12} /> {enrolledLabel}

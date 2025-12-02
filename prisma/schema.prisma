@@ -25,16 +25,17 @@ enum UserStatus {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  password  String // Should be hashed in production
-  name      String
-  avatar    String?
-  role      UserRole   @default(STUDENT)
-  status    UserStatus @default(ACTIVE)
-  bio       String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id          String     @id @default(cuid())
+  email       String     @unique
+  password    String // Should be hashed in production
+  name        String
+  studentCode String?    @unique // 8-9 digit code for students (e.g., 20211234, 202512345)
+  avatar      String?
+  role        UserRole   @default(STUDENT)
+  status      UserStatus @default(ACTIVE)
+  bio         String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   // Relations
   classTeachers            ClassTeacher[]             @relation("ClassTeachers")
@@ -44,12 +45,14 @@ model User {
   posts                    Post[]
   comments                 Comment[]
   postVotes                PostVote[]
+  commentVotes             CommentVote[]
   attendanceRecords        Attendance[]
   notifications            Notification[]
   notificationSubscriptions NotificationSubscription[]
   groupMemberships         GroupMember[]
   createdGroups            Group[]                    @relation("GroupCreator")
   uploadedMaterials        LearningMaterial[]         @relation("UploadedMaterials")
+  uploadedAttachments      ClassAttachment[]          @relation("AttachmentUploader")
 
   @@index([email])
   @@index([role])
@@ -75,6 +78,9 @@ model Class {
   status      ClassStatus @default(ACTIVE)
   semester    String? // e.g., "Fall 2024"
   year        Int?
+  isPrivate   Boolean     @default(false) // Private classes require join code
+  joinCode    String?     @unique // 8-character code for private classes (e.g., "AB12#CD3")
+  createdBy   String? // Teacher who created this class
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -86,9 +92,12 @@ model Class {
   attendance       Attendance[]
   groups           Group[]
   learningMaterials LearningMaterial[]
+  attachments      ClassAttachment[]
 
   @@index([code])
   @@index([status])
+  @@index([isPrivate])
+  @@index([joinCode])
   @@map("classes")
 }
 
@@ -329,12 +338,47 @@ model Comment {
   updatedAt DateTime @updatedAt
 
   // Relations
-  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post        Post            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author      User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  votes       CommentVote[]
+  attachments CommentAttachment[]
 
   @@index([postId])
   @@index([authorId])
   @@map("comments")
+}
+
+model CommentAttachment {
+  id         String   @id @default(cuid())
+  commentId  String
+  fileName   String
+  fileUrl    String
+  fileSize   Int?
+  mimeType   String?
+  uploadedAt DateTime @default(now())
+
+  // Relations
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([commentId])
+  @@map("comment_attachments")
+}
+
+model CommentVote {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  voteType  VoteType
+  createdAt DateTime @default(now())
+
+  // Relations
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@index([userId])
+  @@map("comment_votes")
 }
 
 enum VoteType {
@@ -357,6 +401,25 @@ model PostVote {
   @@index([postId])
   @@index([userId])
   @@map("post_votes")
+}
+
+model ClassAttachment {
+  id         String   @id @default(cuid())
+  classId    String
+  uploaderId String
+  fileName   String
+  fileUrl    String
+  fileSize   Int?
+  mimeType   String?
+  uploadedAt DateTime @default(now())
+
+  // Relations
+  class    Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  uploader User  @relation("AttachmentUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([classId])
+  @@index([uploaderId])
+  @@map("class_attachments")
 }
 
 // ========================================

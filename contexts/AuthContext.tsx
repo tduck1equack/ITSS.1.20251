@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "@/lib/axios";
+import { useToast } from "./ToastContext";
 
 export type UserRole = "ADMINISTRATOR" | "TEACHER" | "STUDENT";
 
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const toast = useToast();
 
   useEffect(() => {
     // Check if user is already logged in (from localStorage or session)
@@ -58,9 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const userData: User = data.user;
-
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
+
+      toast.success("Đăng nhập thành công", `Chào mừng ${userData.name}!`);
 
       // Redirect based on role
       if (userData.role === "ADMINISTRATOR") {
@@ -72,6 +75,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error("Login error:", error);
+      toast.error(
+        "Đăng nhập thất bại",
+        "Vui lòng kiểm tra lại email và mật khẩu"
+      );
       throw error;
     } finally {
       setIsLoading(false);
@@ -79,8 +86,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    const userName = user?.name;
     setUser(null);
     localStorage.removeItem("user");
+    toast.info("Đăng xuất thành công", `Hẹn gặp lại ${userName}!`);
     router.push("/");
   };
 

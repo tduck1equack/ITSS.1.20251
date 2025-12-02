@@ -20,6 +20,22 @@ export async function POST(
       );
     }
 
+    // Verify that the teacher exists and is a TEACHER
+    const teacher = await prisma.user.findUnique({
+      where: { id: teacherId },
+    });
+
+    if (!teacher) {
+      return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
+    }
+
+    if (teacher.role !== "TEACHER") {
+      return NextResponse.json(
+        { error: "User is not a teacher" },
+        { status: 403 }
+      );
+    }
+
     // Check if teacher already added
     const existing = await prisma.classTeacher.findUnique({
       where: {
