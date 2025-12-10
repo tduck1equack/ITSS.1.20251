@@ -125,17 +125,14 @@ export function AssignmentCard({
   };
 
   const handleClick = () => {
-    if (showClass && assignment.class) {
-      router.push(`/dashboard/student/assignments/${assignment.id}`);
-    }
+    // Navigate to assignment detail page
+    router.push(`/dashboard/student/assignments/${assignment.id}`);
   };
 
   return (
     <Card
-      className={`bg-white hover:shadow-md transition-shadow ${
-        showClass ? "cursor-pointer" : ""
-      }`}
-      onClick={showClass ? handleClick : undefined}
+      className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+      onClick={handleClick}
     >
       <Flex direction="column" gap="3">
         {/* Header */}
