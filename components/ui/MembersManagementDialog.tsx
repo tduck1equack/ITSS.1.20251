@@ -43,6 +43,8 @@ interface MembersManagementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   classId: string;
+  createdBy: string | null;
+  currentUserId: string;
   existingTeachers: Teacher[];
   existingStudents: Student[];
   onSave: (changes: {
@@ -57,6 +59,8 @@ export function MembersManagementDialog({
   open,
   onOpenChange,
   classId,
+  createdBy,
+  currentUserId,
   existingTeachers,
   existingStudents,
   onSave,
@@ -119,6 +123,10 @@ export function MembersManagementDialog({
   };
 
   const handleRemoveTeacher = (teacherId: string) => {
+    // Prevent the creator from removing themselves
+    if (createdBy && teacherId === createdBy && teacherId === currentUserId) {
+      return;
+    }
     setTeachers(teachers.filter((id) => id !== teacherId));
   };
 
@@ -338,6 +346,11 @@ export function MembersManagementDialog({
                         availableTeachers.find((t) => t.id === teacherId);
                       if (!teacher) return null;
 
+                      const isCreator =
+                        createdBy &&
+                        teacherId === createdBy &&
+                        teacherId === currentUserId;
+
                       return (
                         <Card key={teacherId} className="p-3 bg-white">
                           <Flex justify="between" align="center">
@@ -349,7 +362,18 @@ export function MembersManagementDialog({
                                 className="bg-mint-500"
                               />
                               <div>
-                                <Text weight="bold">{teacher.name}</Text>
+                                <Text weight="bold">
+                                  {teacher.name}
+                                  {isCreator && (
+                                    <Badge
+                                      color="blue"
+                                      size="1"
+                                      className="ml-2"
+                                    >
+                                      Người tạo
+                                    </Badge>
+                                  )}
+                                </Text>
                               </div>
                             </Flex>
                             <Button
@@ -357,6 +381,12 @@ export function MembersManagementDialog({
                               color="red"
                               variant="soft"
                               onClick={() => handleRemoveTeacher(teacherId)}
+                              disabled={isCreator}
+                              title={
+                                isCreator
+                                  ? "Người tạo lớp không thể xóa chính mình"
+                                  : ""
+                              }
                             >
                               <FiTrash2 size={14} /> Xóa
                             </Button>

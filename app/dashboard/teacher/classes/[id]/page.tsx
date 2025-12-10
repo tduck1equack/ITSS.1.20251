@@ -988,6 +988,8 @@ export default function TeacherClassDetailPage({
         open={isMembersDialogOpen}
         onOpenChange={setIsMembersDialogOpen}
         classId={id}
+        createdBy={classData.createdBy}
+        currentUserId={user?.id || ""}
         existingTeachers={classData.teachers.map((t) => ({
           teacher: {
             ...t.teacher,
