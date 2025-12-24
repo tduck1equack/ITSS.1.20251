@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Dialog, Button, Flex, Text, TextField } from "@radix-ui/themes";
-import { FiUpload, FiFile } from "react-icons/fi";
+import { useState, useRef } from "react";
+import { Dialog, Button, Flex, Text } from "@radix-ui/themes";
+import { FiUpload, FiFile, FiX } from "react-icons/fi";
 import { useToast } from "@/contexts/ToastContext";
 
 interface UploadAttachmentDialogProps {
@@ -21,54 +21,68 @@ export function UploadAttachmentDialog({
   onOpenChange,
   onUpload,
 }: UploadAttachmentDialogProps) {
-  const [fileName, setFileName] = useState("");
-  const [fileUrl, setFileUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Lỗi", "Kích thước tệp vượt quá giới hạn 10MB");
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fileName || !fileUrl) {
-      toast.error("Lỗi", "Vui lòng nhập đầy đủ thông tin");
+    if (!selectedFile) {
+      toast.error("Lỗi", "Vui lòng chọn tệp");
       return;
     }
 
     setUploading(true);
     try {
-      // In a real app, you would upload the file to a storage service here
-      // For this prototype, we'll use a mock file URL
-      const fileExtension = fileName.split(".").pop()?.toLowerCase() || "";
-      const mimeTypes: Record<string, string> = {
-        pdf: "application/pdf",
-        doc: "application/msword",
-        docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        xls: "application/vnd.ms-excel",
-        xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        ppt: "application/vnd.ms-powerpoint",
-        pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        txt: "text/plain",
-        csv: "text/csv",
-        jpg: "image/jpeg",
-        jpeg: "image/jpeg",
-        png: "image/png",
-        gif: "image/gif",
-        mp4: "video/mp4",
-        webm: "video/webm",
-        mp3: "audio/mpeg",
-        wav: "audio/wav",
-      };
+      // Upload file to storage
+      const formData = new FormData();
+      formData.append("file", selectedFile);
 
-      await onUpload({
-        fileName,
-        fileUrl,
-        fileSize: 1024 * 1024, // Mock 1MB size
-        mimeType: mimeTypes[fileExtension] || "application/octet-stream",
+      const uploadResponse = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
       });
 
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload file");
+      }
+
+      const uploadData = await uploadResponse.json();
+
+      await onUpload(uploadData);
+
       toast.success("Thành công", "Đã tải lên tài liệu");
-      setFileName("");
-      setFileUrl("");
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       onOpenChange(false);
     } catch (error) {
       toast.error("Lỗi", "Không thể tải lên tài liệu");
@@ -82,46 +96,62 @@ export function UploadAttachmentDialog({
       <Dialog.Content style={{ maxWidth: 500 }}>
         <Dialog.Title>Tải lên tài liệu</Dialog.Title>
         <Dialog.Description size="2" mb="4">
-          Tải lên tài liệu cho lớp học (PDF, Word, Excel, PowerPoint, hình ảnh,
-          video...)
+          Chọn tệp để tải lên (tối đa 10MB)
         </Dialog.Description>
 
         <form onSubmit={handleSubmit}>
           <Flex direction="column" gap="3">
-            <label>
-              <Text as="div" size="2" mb="1" weight="bold">
-                Tên tệp <span className="text-red-500">*</span>
+            <div>
+              <Text as="div" size="2" mb="2" weight="bold">
+                Chọn tệp <span className="text-red-500">*</span>
               </Text>
-              <TextField.Root
-                placeholder="VD: Bai_giang_1.pdf"
-                value={fileName}
-                onChange={(e) => setFileName(e.target.value)}
-                required
-              >
-                <TextField.Slot>
-                  <FiFile />
-                </TextField.Slot>
-              </TextField.Root>
-              <Text size="1" className="text-gray-500 mt-1">
-                Bao gồm phần mở rộng (.pdf, .docx, .mp4, etc.)
-              </Text>
-            </label>
-
-            <label>
-              <Text as="div" size="2" mb="1" weight="bold">
-                URL tệp <span className="text-red-500">*</span>
-              </Text>
-              <TextField.Root
-                placeholder="https://example.com/file.pdf"
-                value={fileUrl}
-                onChange={(e) => setFileUrl(e.target.value)}
-                required
-                type="url"
-              />
-              <Text size="1" className="text-gray-500 mt-1">
-                Liên kết đến tệp (trong thực tế sẽ tự động tải lên)
-              </Text>
-            </label>
+              
+              {!selectedFile ? (
+                <label className="block">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.mp4,.webm,.mp3,.wav,.zip,.rar"
+                  />
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors">
+                    <FiUpload className="mx-auto text-4xl text-gray-400 mb-2" />
+                    <Text size="2" className="text-gray-600">
+                      Nhấn để chọn tệp
+                    </Text>
+                    <Text size="1" className="text-gray-400 mt-1">
+                      PDF, Word, Excel, PowerPoint, hình ảnh, video...
+                    </Text>
+                  </div>
+                </label>
+              ) : (
+                <div className="border border-gray-300 rounded-lg p-4">
+                  <Flex justify="between" align="center">
+                    <Flex gap="2" align="center">
+                      <FiFile className="text-blue-500 text-xl" />
+                      <div>
+                        <Text size="2" weight="bold">
+                          {selectedFile.name}
+                        </Text>
+                        <Text size="1" className="text-gray-500">
+                          {formatFileSize(selectedFile.size)}
+                        </Text>
+                      </div>
+                    </Flex>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      color="red"
+                      size="1"
+                      onClick={handleRemoveFile}
+                    >
+                      <FiX />
+                    </Button>
+                  </Flex>
+                </div>
+              )}
+            </div>
 
             <Flex gap="3" justify="end" className="mt-2">
               <Dialog.Close>
@@ -132,7 +162,8 @@ export function UploadAttachmentDialog({
               <Button
                 type="submit"
                 className="bg-mint-500"
-                disabled={uploading}
+                disabled={uploading || !selectedFile}
+                loading={uploading}
               >
                 <FiUpload size={16} />
                 {uploading ? "Đang tải lên..." : "Tải lên"}

@@ -27,6 +27,7 @@ import {
   FiRefreshCw,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { AssignmentUploadDialog } from "./AssignmentUploadDialog";
 
 interface AssignmentListItemProps {
@@ -102,6 +103,8 @@ export function AssignmentListItem({
   onUploadComplete,
 }: AssignmentListItemProps) {
   const router = useRouter();
+  const t = useTranslations('assignments.general');
+  const tStatus = useTranslations('assignments.status');
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,25 +127,25 @@ export function AssignmentListItem({
         case "SUBMITTED":
           return (
             <Badge color="blue" variant="soft">
-              <FiCheckCircle size={12} /> Đã nộp
+              <FiCheckCircle size={12} /> {tStatus('submitted')}
             </Badge>
           );
         case "GRADED":
           return (
             <Badge color="green" variant="soft">
-              <FiCheckCircle size={12} /> Đã chấm điểm
+              <FiCheckCircle size={12} /> {tStatus('graded')}
             </Badge>
           );
         case "LATE":
           return (
             <Badge color="orange" variant="soft">
-              <FiAlertCircle size={12} /> Nộp trễ
+              <FiAlertCircle size={12} /> {tStatus('late')}
             </Badge>
           );
         default:
           return (
             <Badge color="gray" variant="soft">
-              <FiClock size={12} /> Nháp
+              <FiClock size={12} /> {tStatus('draft')}
             </Badge>
           );
       }
@@ -151,7 +154,7 @@ export function AssignmentListItem({
     if (isOverdue) {
       return (
         <Badge color="red" variant="soft">
-          <FiAlertCircle size={12} /> Quá hạn
+          <FiAlertCircle size={12} /> {tStatus('overdue')}
         </Badge>
       );
     }
@@ -159,14 +162,14 @@ export function AssignmentListItem({
     if (daysUntilDue <= 1) {
       return (
         <Badge color="orange" variant="soft">
-          <FiClock size={12} /> Sắp đến hạn
+          <FiClock size={12} /> {tStatus('due_soon')}
         </Badge>
       );
     }
 
     return (
       <Badge color="mint" variant="soft">
-        Đang mở
+        {tStatus('open')}
       </Badge>
     );
   };
@@ -413,6 +416,22 @@ export function AssignmentListItem({
                 Điểm: {submission.grade}/{assignment.maxPoints}
               </Badge>
             )}
+
+            {/* View Details Button */}
+            <Button
+              size="2"
+              variant="soft"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isStudent) {
+                  router.push(`/dashboard/student/assignments/${assignment.id}`);
+                } else if (canEdit || canDelete) {
+                  router.push(`/dashboard/teacher/assignments/${assignment.id}`);
+                }
+              }}
+            >
+              {t('view_details')}
+            </Button>
           </Flex>
 
           {/* Expanded Content */}

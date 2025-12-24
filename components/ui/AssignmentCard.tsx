@@ -13,6 +13,7 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 interface AssignmentCardProps {
   assignment: {
@@ -63,6 +64,8 @@ export function AssignmentCard({
   onDelete,
 }: AssignmentCardProps) {
   const router = useRouter();
+  const t = useTranslations('assignments.general');
+  const tStatus = useTranslations('assignments.status');
   const dueDate = new Date(assignment.dueDate);
   const now = new Date();
   const isOverdue =
@@ -77,25 +80,25 @@ export function AssignmentCard({
         case "SUBMITTED":
           return (
             <Badge color="blue" variant="soft">
-              <FiCheckCircle size={12} /> Đã nộp
+              <FiCheckCircle size={12} /> {tStatus('submitted')}
             </Badge>
           );
         case "GRADED":
           return (
             <Badge color="green" variant="soft">
-              <FiCheckCircle size={12} /> Đã chấm điểm
+              <FiCheckCircle size={12} /> {tStatus('graded')}
             </Badge>
           );
         case "LATE":
           return (
             <Badge color="orange" variant="soft">
-              <FiAlertCircle size={12} /> Nộp trễ
+              <FiAlertCircle size={12} /> {tStatus('late')}
             </Badge>
           );
         default:
           return (
             <Badge color="gray" variant="soft">
-              <FiClock size={12} /> Nháp
+              <FiClock size={12} /> {tStatus('draft')}
             </Badge>
           );
       }
@@ -104,7 +107,7 @@ export function AssignmentCard({
     if (isOverdue) {
       return (
         <Badge color="red" variant="soft">
-          <FiAlertCircle size={12} /> Quá hạn
+          <FiAlertCircle size={12} /> {tStatus('overdue')}
         </Badge>
       );
     }
@@ -112,30 +115,33 @@ export function AssignmentCard({
     if (daysUntilDue <= 1) {
       return (
         <Badge color="orange" variant="soft">
-          <FiClock size={12} /> Sắp đến hạn
+          <FiClock size={12} /> {tStatus('due_soon')}
         </Badge>
       );
     }
 
     return (
       <Badge color="mint" variant="soft">
-        Đang mở
+        {tStatus('open')}
       </Badge>
     );
   };
 
   const handleClick = () => {
-    if (showClass && assignment.class) {
-      router.push(`/dashboard/student/assignments/${assignment.id}`);
+    if (assignment.class) {
+      if (showClass) {
+        // Student view - navigate to student assignment detail
+        router.push(`/dashboard/student/assignments/${assignment.id}`);
+      } else if (canEdit || canDelete) {
+        // Teacher view - navigate to teacher assignment detail
+        router.push(`/dashboard/teacher/assignments/${assignment.id}`);
+      }
     }
   };
 
   return (
     <Card
-      className={`bg-white hover:shadow-md transition-shadow ${
-        showClass ? "cursor-pointer" : ""
-      }`}
-      onClick={showClass ? handleClick : undefined}
+      className="bg-white hover:shadow-md transition-shadow"
     >
       <Flex direction="column" gap="3">
         {/* Header */}
@@ -212,7 +218,7 @@ export function AssignmentCard({
             {/* Max Points */}
             <Flex gap="1" align="center">
               <Text size="2" weight="bold" className="text-mint-600">
-                {assignment.maxPoints} điểm
+                {t('points', { points: assignment.maxPoints })}
               </Text>
             </Flex>
 
@@ -221,7 +227,7 @@ export function AssignmentCard({
               <Flex gap="1" align="center">
                 <FiFile size={14} className="text-gray-500" />
                 <Text size="2" className="text-gray-600">
-                  {assignment.attachments.length} tệp
+                  {t('files', { count: assignment.attachments.length })}
                 </Text>
               </Flex>
             )}
@@ -231,7 +237,7 @@ export function AssignmentCard({
               <Flex gap="1" align="center">
                 <FiCheckCircle size={14} className="text-gray-500" />
                 <Text size="2" className="text-gray-600">
-                  {assignment._count.submissions} bài nộp
+                  {t('submissions', { count: assignment._count.submissions })}
                 </Text>
               </Flex>
             )}
@@ -240,9 +246,21 @@ export function AssignmentCard({
           {/* Graded Score */}
           {submission?.grade !== undefined && submission.grade !== null && (
             <Badge color="green" size="2">
-              Điểm: {submission.grade}/{assignment.maxPoints}
+              {t('grade', { grade: submission.grade, maxPoints: assignment.maxPoints })}
             </Badge>
           )}
+
+          {/* View Details Button */}
+          <Button
+            size="2"
+            variant="soft"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClick();
+            }}
+          >
+            {t('view_details')}
+          </Button>
 
           {/* Teacher Info */}
           {assignment.createdBy && (

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@/prisma/generated/client";
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // PATCH /api/notifications/[id] - Mark notification as read
 export async function PATCH(

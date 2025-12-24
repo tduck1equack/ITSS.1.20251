@@ -1,7 +1,5 @@
-import { PrismaClient } from "./generated/client";
 import { setLocalizedFields } from "../lib/localization";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma"
 
 // Vietnamese names for realistic data
 const firstNames = [
