@@ -21,6 +21,7 @@ import {
   FiUserPlus,
   FiUserMinus,
 } from "react-icons/fi";
+import { useTranslations } from "next-intl";
 
 interface User {
   id: string;
@@ -65,6 +66,7 @@ export function MembersManagementDialog({
   existingStudents,
   onSave,
 }: MembersManagementDialogProps) {
+  const t = useTranslations('classes.members_dialog');
   const [teachers, setTeachers] = useState<string[]>([]);
   const [students, setStudents] = useState<string[]>([]);
   const [initialTeachers, setInitialTeachers] = useState<string[]>([]);
@@ -199,18 +201,18 @@ export function MembersManagementDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Content style={{ maxWidth: 900 }}>
-        <Dialog.Title>Quản lý thành viên lớp</Dialog.Title>
+        <Dialog.Title>{t('title')}</Dialog.Title>
 
         {/* Change Indicator */}
         {hasChanges && (
           <Card className="mt-4 p-3 bg-blue-50 border-blue-300">
             <Flex direction="column" gap="2">
               <Text size="2" weight="bold" className="text-blue-900">
-                Thay đổi chưa lưu:
+                {t('unsaved_changes')}
               </Text>
               {teacherChanges.added.length > 0 && (
                 <Text size="2" className="text-green-700">
-                  ✓ Thêm giảng viên:{" "}
+                  {t('added_teachers')}{" "}
                   {teacherChanges.added
                     .map((id) => getUser(id, availableTeachers)?.name || id)
                     .join(", ")}
@@ -218,7 +220,7 @@ export function MembersManagementDialog({
               )}
               {teacherChanges.removed.length > 0 && (
                 <Text size="2" className="text-red-700">
-                  ✗ Xóa giảng viên:{" "}
+                  {t('removed_teachers')}{" "}
                   {teacherChanges.removed
                     .map(
                       (id) =>
@@ -230,7 +232,7 @@ export function MembersManagementDialog({
               )}
               {studentChanges.added.length > 0 && (
                 <Text size="2" className="text-green-700">
-                  ✓ Thêm sinh viên:{" "}
+                  {t('added_students')}{" "}
                   {studentChanges.added
                     .map((id) => getUser(id, availableStudents)?.name || id)
                     .join(", ")}
@@ -238,7 +240,7 @@ export function MembersManagementDialog({
               )}
               {studentChanges.removed.length > 0 && (
                 <Text size="2" className="text-red-700">
-                  ✗ Xóa sinh viên:{" "}
+                  {t('removed_students')}{" "}
                   {studentChanges.removed
                     .map(
                       (id) =>
@@ -255,10 +257,10 @@ export function MembersManagementDialog({
         <Tabs.Root defaultValue="teachers" className="mt-4">
           <Tabs.List>
             <Tabs.Trigger value="teachers">
-              Giảng viên ({teachers.length})
+              {t('teachers_tab')} ({teachers.length})
             </Tabs.Trigger>
             <Tabs.Trigger value="students">
-              Sinh viên ({students.length})
+              {t('students_tab')} ({students.length})
             </Tabs.Trigger>
           </Tabs.List>
 
@@ -268,12 +270,12 @@ export function MembersManagementDialog({
               {/* Add Teacher Section */}
               <Card className="p-4 bg-gray-50">
                 <Text size="2" weight="bold" className="mb-3 block">
-                  Thêm giảng viên
+                  {t('add_teacher')}
                 </Text>
                 <Flex gap="2" align="end">
                   <div className="flex-1">
                     <TextField.Root
-                      placeholder="Tìm theo tên hoặc email..."
+                      placeholder={t('search_teacher_placeholder')}
                       value={teacherSearch}
                       onChange={(e) => setTeacherSearch(e.target.value)}
                     >
@@ -286,7 +288,7 @@ export function MembersManagementDialog({
 
                 {loadingData ? (
                   <Text size="2" className="text-gray-500 mt-3">
-                    Đang tải...
+                    {t('loading')}
                   </Text>
                 ) : filteredAvailableTeachers.length > 0 ? (
                   <div className="mt-3 max-h-48 overflow-y-auto">
@@ -316,7 +318,7 @@ export function MembersManagementDialog({
                               }}
                               className="bg-mint-500 hover:bg-mint-600"
                             >
-                              <FiPlus size={14} /> Thêm
+                              <FiPlus size={14} /> {t('add')}
                             </Button>
                           </Flex>
                         </Card>
@@ -326,8 +328,8 @@ export function MembersManagementDialog({
                 ) : (
                   <Text size="2" className="text-gray-500 mt-3">
                     {teacherSearch
-                      ? "Không tìm thấy giảng viên"
-                      : "Tất cả giảng viên đã được thêm"}
+                      ? t('no_teachers_found')
+                      : t('all_teachers_added')}
                   </Text>
                 )}
               </Card>
@@ -335,7 +337,7 @@ export function MembersManagementDialog({
               {/* Current Teachers List */}
               <div>
                 <Text size="2" weight="bold" className="mb-3 block">
-                  Giảng viên hiện tại
+                  {t('current_teachers')}
                 </Text>
                 <div className="overflow-y-auto" style={{ maxHeight: "300px" }}>
                   <Flex direction="column" gap="2">
@@ -370,7 +372,7 @@ export function MembersManagementDialog({
                                       size="1"
                                       className="ml-2"
                                     >
-                                      Người tạo
+                                      {t('creator_badge')}
                                     </Badge>
                                   )}
                                 </Text>
@@ -384,11 +386,11 @@ export function MembersManagementDialog({
                               disabled={isCreator}
                               title={
                                 isCreator
-                                  ? "Người tạo lớp không thể xóa chính mình"
+                                  ? t('creator_cannot_remove')
                                   : ""
                               }
                             >
-                              <FiTrash2 size={14} /> Xóa
+                              <FiTrash2 size={14} /> {t('remove')}
                             </Button>
                           </Flex>
                         </Card>
@@ -406,12 +408,12 @@ export function MembersManagementDialog({
               {/* Add Student Section */}
               <Card className="p-4 bg-gray-50">
                 <Text size="2" weight="bold" className="mb-3 block">
-                  Thêm sinh viên
+                  {t('add_student')}
                 </Text>
                 <Flex gap="2" align="end">
                   <div className="flex-1">
                     <TextField.Root
-                      placeholder="Tìm theo tên, email hoặc MSSV..."
+                      placeholder={t('search_student_placeholder')}
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
                     >
@@ -424,7 +426,7 @@ export function MembersManagementDialog({
 
                 {loadingData ? (
                   <Text size="2" className="text-gray-500 mt-3">
-                    Đang tải...
+                    {t('loading')}
                   </Text>
                 ) : filteredAvailableStudents.length > 0 ? (
                   <div className="mt-3 max-h-48 overflow-y-auto">
@@ -460,7 +462,7 @@ export function MembersManagementDialog({
                               }}
                               className="bg-mint-500 hover:bg-mint-600"
                             >
-                              <FiPlus size={14} /> Thêm
+                              <FiPlus size={14} /> {t('add')}
                             </Button>
                           </Flex>
                         </Card>
@@ -470,8 +472,8 @@ export function MembersManagementDialog({
                 ) : (
                   <Text size="2" className="text-gray-500 mt-3">
                     {studentSearch
-                      ? "Không tìm thấy sinh viên"
-                      : "Tất cả sinh viên đã được thêm"}
+                      ? t('no_students_found')
+                      : t('all_students_added')}
                   </Text>
                 )}
               </Card>
@@ -479,7 +481,7 @@ export function MembersManagementDialog({
               {/* Current Students List */}
               <div>
                 <Text size="2" weight="bold" className="mb-3 block">
-                  Sinh viên hiện tại
+                  {t('current_students')}
                 </Text>
                 <div className="overflow-y-auto" style={{ maxHeight: "300px" }}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -538,7 +540,7 @@ export function MembersManagementDialog({
         <Flex gap="3" mt="4" justify="end">
           <Dialog.Close>
             <Button variant="soft" color="gray">
-              Hủy
+              {t('cancel')}
             </Button>
           </Dialog.Close>
           <Button
@@ -546,7 +548,7 @@ export function MembersManagementDialog({
             disabled={loading || !hasChanges}
             className="bg-mint-500 hover:bg-mint-600"
           >
-            {loading ? "Đang lưu..." : "Lưu thay đổi"}
+            {loading ? t('saving') : t('save_changes')}
           </Button>
         </Flex>
       </Dialog.Content>

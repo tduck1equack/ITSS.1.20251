@@ -9,10 +9,13 @@ import {
   IconButton,
   Dialog,
   TextArea,
+  Tooltip,
 } from "@radix-ui/themes";
-import { FiThumbsUp, FiThumbsDown, FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiThumbsUp, FiThumbsDown, FiEdit2, FiTrash2, FiCheck } from "react-icons/fi";
 import { AttachmentCard } from "./AttachmentCard";
+import { VoteButtons } from "./VoteButtons";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface CommentCardProps {
   comment: {
@@ -44,6 +47,9 @@ interface CommentCardProps {
   onVote?: (commentId: string, voteType: "UPVOTE" | "DOWNVOTE") => void;
   onEdit?: (commentId: string, content: string) => void;
   onDelete?: (commentId: string) => void;
+  isCorrectAnswer?: boolean;
+  isTeacher?: boolean;
+  onMarkAnswer?: (commentId: string, isCurrentAnswer: boolean) => void;
 }
 
 export function CommentCard({
@@ -53,14 +59,14 @@ export function CommentCard({
   onVote,
   onEdit,
   onDelete,
+  isCorrectAnswer = false,
+  isTeacher = false,
+  onMarkAnswer,
 }: CommentCardProps) {
+  const tPostActions = useTranslations('posts.actions');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
 
-  const upvotes =
-    comment.votes?.filter((v) => v.voteType === "UPVOTE").length || 0;
-  const downvotes =
-    comment.votes?.filter((v) => v.voteType === "DOWNVOTE").length || 0;
   const isAuthor = comment.authorId === currentUserId;
 
   const handleEditComment = () => {
@@ -71,8 +77,20 @@ export function CommentCard({
   };
 
   return (
-    <Flex gap="2" direction="column" className="bg-gray-50 p-3 rounded-md">
+    <Flex gap="2" direction="column" className={`p-3 rounded-md ${isCorrectAnswer ? 'bg-green-50 border-2 border-green-500' : 'bg-gray-50'}`}>
       <Flex gap="2">
+        {/* Vote Buttons - Reddit Style */}
+        {onVote && (
+          <div className="pt-1">
+            <VoteButtons
+              votes={comment.votes}
+              userVote={userVote}
+              onVote={(voteType) => onVote(comment.id, voteType)}
+              size="small"
+            />
+          </div>
+        )}
+
         <Avatar
           size="1"
           src={comment.author?.avatar}
@@ -90,14 +108,32 @@ export function CommentCard({
                   {comment.author.groupName}
                 </Badge>
               )}
+              {isCorrectAnswer && (
+                <Badge size="1" color="green">
+                  <FiCheck size={12} /> {tPostActions('correct_answer')}
+                </Badge>
+              )}
               <Text size="1" className="text-gray-500">
                 • {new Date(comment.createdAt).toLocaleDateString("vi-VN")}
                 {comment.updatedAt !== comment.createdAt && " (đã sửa)"}
               </Text>
             </Flex>
-            {isAuthor && (
-              <Flex gap="1">
-                <IconButton
+            <Flex gap="1">
+              {isTeacher && onMarkAnswer && (
+                <Tooltip content={isCorrectAnswer ? tPostActions('unmark_as_answer') : tPostActions('mark_as_answer')}>
+                  <IconButton
+                    size="1"
+                    variant="ghost"
+                    color={isCorrectAnswer ? "green" : "gray"}
+                    onClick={() => onMarkAnswer(comment.id, isCorrectAnswer)}
+                  >
+                    <FiCheck size={14} />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {isAuthor && (
+                <>
+                  <IconButton
                   size="1"
                   variant="soft"
                   color="gray"
@@ -113,8 +149,9 @@ export function CommentCard({
                 >
                   <FiTrash2 size={12} />
                 </IconButton>
-              </Flex>
-            )}
+                </>
+              )}
+            </Flex>
           </Flex>
           <Text size="2" className="text-gray-700 mt-1 whitespace-pre-wrap">
             {comment.content}
@@ -126,28 +163,6 @@ export function CommentCard({
               {comment.attachments.map((att) => (
                 <AttachmentCard key={att.id} attachment={att} />
               ))}
-            </Flex>
-          )}
-
-          {/* Vote buttons */}
-          {onVote && (
-            <Flex gap="1" className="mt-2">
-              <Button
-                size="1"
-                variant={userVote?.voteType === "UPVOTE" ? "solid" : "soft"}
-                color={userVote?.voteType === "UPVOTE" ? "mint" : "gray"}
-                onClick={() => onVote(comment.id, "UPVOTE")}
-              >
-                <FiThumbsUp size={12} /> {upvotes}
-              </Button>
-              <Button
-                size="1"
-                variant={userVote?.voteType === "DOWNVOTE" ? "solid" : "soft"}
-                color={userVote?.voteType === "DOWNVOTE" ? "red" : "gray"}
-                onClick={() => onVote(comment.id, "DOWNVOTE")}
-              >
-                <FiThumbsDown size={12} /> {downvotes}
-              </Button>
             </Flex>
           )}
         </div>

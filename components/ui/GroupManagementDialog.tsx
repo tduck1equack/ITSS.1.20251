@@ -13,6 +13,7 @@ import {
   Tabs,
 } from "@radix-ui/themes";
 import { FiX, FiShuffle, FiPlus, FiTrash2, FiSearch } from "react-icons/fi";
+import { useTranslations } from "next-intl";
 
 interface Student {
   id: string;
@@ -46,6 +47,7 @@ export function GroupManagementDialog({
   existingGroups = [],
   onSave,
 }: GroupManagementDialogProps) {
+  const t = useTranslations('classes.groups_dialog');
   const [groups, setGroups] = useState<Group[]>([]);
   const [initialGroups, setInitialGroups] = useState<Group[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,13 +85,13 @@ export function GroupManagementDialog({
   const handleRandomDivide = () => {
     // Validate input
     if (!numGroupsInput.trim()) {
-      setValidationError("Vui lòng nhập số lượng nhóm");
+      setValidationError(t('error_empty_input'));
       return;
     }
 
     // Use the already validated numGroups state
     if (numGroups < 1) {
-      setValidationError("Số lượng nhóm phải là số nguyên dương");
+      setValidationError(t('error_invalid_number'));
       return;
     }
 
@@ -98,7 +100,7 @@ export function GroupManagementDialog({
 
     // Check if students exist
     if (!students || students.length === 0) {
-      setValidationError("Không có sinh viên để phân nhóm");
+      setValidationError(t('error_no_students'));
       return;
     }
 
@@ -149,19 +151,19 @@ export function GroupManagementDialog({
 
     // Check if input contains multiple numbers separated by comma, space, etc.
     if (/[,\s]/.test(value.trim())) {
-      setValidationError("Đầu vào không hợp lệ! Chỉ nhập một số nguyên dương.");
+      setValidationError(t('error_invalid_input'));
       return;
     }
 
     // Check if input contains non-numeric characters (except leading/trailing spaces)
     if (!/^\d+$/.test(value.trim())) {
-      setValidationError("Đầu vào không hợp lệ! Chỉ nhập số nguyên dương.");
+      setValidationError(t('error_not_integer'));
       return;
     }
 
     const parsed = parseInt(value.trim());
     if (isNaN(parsed) || parsed < 1) {
-      setValidationError("Đầu vào không hợp lệ! Số phải lớn hơn 0.");
+      setValidationError(t('error_must_positive'));
       return;
     }
 
@@ -250,12 +252,12 @@ export function GroupManagementDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Content style={{ maxWidth: 900 }}>
-        <Dialog.Title>Quản lý nhóm</Dialog.Title>
+        <Dialog.Title>{t('title')}</Dialog.Title>
 
         <Tabs.Root defaultValue="manual">
           <Tabs.List>
-            <Tabs.Trigger value="random">Chia ngẫu nhiên</Tabs.Trigger>
-            <Tabs.Trigger value="manual">Thủ công</Tabs.Trigger>
+            <Tabs.Trigger value="random">{t('random_tab')}</Tabs.Trigger>
+            <Tabs.Trigger value="manual">{t('manual_tab')}</Tabs.Trigger>
           </Tabs.List>
 
           {/* Change Indicator */}
@@ -263,23 +265,23 @@ export function GroupManagementDialog({
             <Card className="mt-4 p-3 bg-blue-50 border-blue-300">
               <Flex direction="column" gap="2">
                 <Text size="2" weight="bold" className="text-blue-900">
-                  Thay đổi chưa lưu:
+                  {t('unsaved_changes')}
                 </Text>
                 {addedGroups.length > 0 && (
                   <Text size="2" className="text-green-700">
-                    ✓ Thêm mới: {addedGroups.join(", ")}
+                    {t('added_groups')} {addedGroups.join(", ")}
                   </Text>
                 )}
                 {deletedGroups.length > 0 && (
                   <Text size="2" className="text-red-700">
-                    ✗ Xóa: {deletedGroups.join(", ")}
+                    {t('deleted_groups')} {deletedGroups.join(", ")}
                   </Text>
                 )}
                 {addedGroups.length === 0 &&
                   deletedGroups.length === 0 &&
                   keptGroups.length > 0 && (
                     <Text size="2" className="text-blue-700">
-                      ⟳ Đã chỉnh sửa {keptGroups.length} nhóm
+                      {t('edited_groups', { count: keptGroups.length })}
                     </Text>
                   )}
               </Flex>
@@ -292,11 +294,11 @@ export function GroupManagementDialog({
               <Flex gap="3" align="end">
                 <label className="flex-1">
                   <Text as="div" size="2" mb="1" weight="bold">
-                    Số lượng nhóm
+                    {t('num_groups_label')}
                   </Text>
                   <TextField.Root
                     type="text"
-                    placeholder="Nhập số nhóm..."
+                    placeholder={t('num_groups_placeholder')}
                     value={numGroupsInput}
                     onChange={(e) => handleNumGroupsChange(e.target.value)}
                   />
@@ -305,26 +307,26 @@ export function GroupManagementDialog({
                   onClick={handleRandomDivide}
                   className="bg-mint-500 hover:bg-mint-600"
                 >
-                  <FiShuffle size={16} /> Chia ngẫu nhiên
+                  <FiShuffle size={16} /> {t('divide_random')}
                 </Button>
               </Flex>
 
               {validationError && (
                 <Card
                   className={`p-3 ${
-                    validationError.includes("vượt quá") ||
-                    validationError.includes("Sẽ tạo")
-                      ? "bg-yellow-50 border-yellow-300"
-                      : "bg-red-50 border-red-300"
+                    validationError.includes(t('error_invalid_number')) ||
+                    validationError.includes(t('error_empty_input'))
+                      ? "bg-red-50 border-red-300"
+                      : "bg-yellow-50 border-yellow-300"
                   }`}
                 >
                   <Text
                     size="2"
                     className={
-                      validationError.includes("vượt quá") ||
-                      validationError.includes("Sẽ tạo")
-                        ? "text-yellow-700"
-                        : "text-red-700"
+                      validationError.includes(t('error_invalid_number')) ||
+                      validationError.includes(t('error_empty_input'))
+                        ? "text-red-700"
+                        : "text-yellow-700"
                     }
                   >
                     {validationError}
@@ -335,7 +337,7 @@ export function GroupManagementDialog({
               {groups.length > 0 && (
                 <Card className="bg-gray-50 p-4">
                   <Text size="2" weight="bold" className="mb-3 block">
-                    Kết quả chia nhóm ({groups.length} nhóm)
+                    {t('result_label', { count: groups.length })}
                   </Text>
                   <Flex direction="column" gap="2">
                     {groups.map((group, index) => (
@@ -344,7 +346,7 @@ export function GroupManagementDialog({
                           {group.name}
                         </Badge>
                         <Text size="2">
-                          {group.memberIds.length} thành viên
+                          {t('members_count', { count: group.memberIds.length })}
                         </Text>
                       </Flex>
                     ))}
@@ -359,14 +361,14 @@ export function GroupManagementDialog({
             <Flex direction="column" gap="4" className="mt-4">
               <Flex justify="between" align="center">
                 <Text size="2" weight="bold">
-                  Danh sách nhóm ({groups.length})
+                  {t('groups_list', { count: groups.length })}
                 </Text>
                 <Button
                   size="2"
                   onClick={handleAddGroup}
                   className="bg-mint-500 hover:bg-mint-600"
                 >
-                  <FiPlus size={16} /> Thêm nhóm
+                  <FiPlus size={16} /> {t('add_group')}
                 </Button>
               </Flex>
 
@@ -428,7 +430,7 @@ export function GroupManagementDialog({
                           </Flex>
                         ) : (
                           <Text size="2" className="text-gray-500">
-                            Chưa có thành viên
+                            {t('no_members')}
                           </Text>
                         )}
                       </Flex>
@@ -445,7 +447,7 @@ export function GroupManagementDialog({
                       Chưa phân nhóm ({unassignedStudents.length})
                     </Text>
                     <TextField.Root
-                      placeholder="Tìm kiếm sinh viên..."
+                      placeholder={t('search_student_placeholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="max-w-xs"
@@ -508,8 +510,8 @@ export function GroupManagementDialog({
                   ) : (
                     <Text size="2" className="text-gray-500 text-center">
                       {searchQuery
-                        ? "Không tìm thấy sinh viên"
-                        : "Tất cả sinh viên đã được phân nhóm"}
+                        ? t('no_students_found')
+                        : t('all_students_assigned')}
                     </Text>
                   )}
                 </Flex>
@@ -521,7 +523,7 @@ export function GroupManagementDialog({
         <Flex gap="3" mt="4" justify="end">
           <Dialog.Close>
             <Button variant="soft" color="gray">
-              Hủy
+              {t('cancel')}
             </Button>
           </Dialog.Close>
           <Button
@@ -529,7 +531,7 @@ export function GroupManagementDialog({
             disabled={loading || groups.length === 0}
             className="bg-mint-500 hover:bg-mint-600"
           >
-            {loading ? "Đang lưu..." : "Lưu nhóm"}
+            {loading ? t('saving') : t('save_groups')}
           </Button>
         </Flex>
       </Dialog.Content>

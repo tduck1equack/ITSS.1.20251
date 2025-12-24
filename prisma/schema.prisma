@@ -294,15 +294,17 @@ enum PostType {
 }
 
 model Post {
-  id        String   @id @default(cuid())
-  classId   String
-  authorId  String
-  title     String
-  content   String
-  type      PostType @default(DISCUSSION)
-  pinned    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  classId           String
+  authorId          String
+  title             String
+  content           String
+  type              PostType @default(DISCUSSION)
+  pinned            Boolean  @default(false)
+  resolved          Boolean  @default(false)
+  resolvedCommentId String?  // The comment marked as correct answer
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
   class       Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
@@ -315,6 +317,7 @@ model Post {
   @@index([authorId])
   @@index([type])
   @@index([pinned])
+  @@index([resolved])
   @@map("posts")
 }
 

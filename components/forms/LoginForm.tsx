@@ -131,7 +131,7 @@ const LoginForm = forwardRef<LoginFormRef, LoginFormProps>(
                 htmlFor="email"
                 className="text-sm font-medium text-gray-700"
               >
-                {tFields('email')}
+                {tFields('email_label')}
               </label>
               <TextField.Root
                 id="email"
@@ -158,7 +158,7 @@ const LoginForm = forwardRef<LoginFormRef, LoginFormProps>(
                 htmlFor="password"
                 className="text-sm font-medium text-gray-700"
               >
-                {tFields('password')}
+                {tFields('password_label')}
               </label>
               <TextField.Root
                 id="password"

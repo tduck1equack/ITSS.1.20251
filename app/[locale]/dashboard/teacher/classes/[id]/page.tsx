@@ -120,6 +120,8 @@ export default function TeacherClassDetailPage({
   const tButtons = useTranslations('classes.detail.buttons');
   const tEmpty = useTranslations('classes.detail.empty_states');
   const tActions = useTranslations('classes.detail.actions');
+  const tPostSort = useTranslations('posts.sorting');
+  const tPostActions = useTranslations('posts.actions');
   const [classData, setClassData] = useState<ClassData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
@@ -133,6 +135,7 @@ export default function TeacherClassDetailPage({
   const [attachments, setAttachments] = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
+  const [postSortOrder, setPostSortOrder] = useState<"latest" | "oldest" | "most_votes" | "recently_updated">("latest");
   const [assignments, setAssignments] = useState<any[]>([]);
   const [isAttendanceDialogOpen, setIsAttendanceDialogOpen] = useState(false);
   const [attendanceSessions, setAttendanceSessions] = useState<any[]>([]);
@@ -287,19 +290,63 @@ export default function TeacherClassDetailPage({
     content: string,
     attachments?: FileAttachment[]
   ) => {
-    if (!content?.trim()) return;
+    if (!content?.trim() || !classData) return;
+
+    // Create optimistic comment
+    const optimisticComment = {
+      id: `temp-${Date.now()}`,
+      content,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      authorId: user?.id || '',
+      author: {
+        id: user?.id || '',
+        name: user?.name || '',
+        email: user?.email || '',
+      },
+      votes: [],
+      attachments: attachments || [],
+    };
+
+    // Optimistic update
+    const updatedPosts = classData.posts.map((post) => {
+      if (post.id !== postId) return post;
+      return {
+        ...post,
+        comments: [...(post.comments || []), optimisticComment],
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    setClassData({ ...classData, posts: updatedPosts });
+    toast.success(tActions('comment_added'));
 
     try {
-      await axios.post(`/api/posts/${postId}/comments`, {
+      const response = await axios.post(`/api/posts/${postId}/comments`, {
         authorId: user?.id,
         content,
         attachments,
       });
-      fetchClassData();
-      toast.success(tActions('comment_added'));
+
+      // Replace optimistic comment with real data
+      const realComment = response.data;
+      const finalPosts = classData.posts.map((post) => {
+        if (post.id !== postId) return post;
+        return {
+          ...post,
+          comments: [
+            ...(post.comments || []).filter((c: any) => c.id !== optimisticComment.id),
+            realComment,
+          ],
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      setClassData({ ...classData, posts: finalPosts });
     } catch (error) {
       console.error("Failed to comment:", error);
       toast.error(tActions('comment_failed'));
+      // Revert optimistic update
+      fetchClassData();
     }
   };
 
@@ -359,6 +406,137 @@ export default function TeacherClassDetailPage({
 
   const handleCommentSortChange = (value: "time" | "votes") => {
     setCommentSortOrder(value);
+  };
+
+  const handlePinPost = async (postId: string, pinned: boolean) => {
+    if (!classData) return;
+
+    // Optimistic update
+    const updatedPosts = classData.posts.map((post) =>
+      post.id === postId ? { ...post, pinned: !pinned } : post
+    );
+    setClassData({ ...classData, posts: updatedPosts });
+
+    try {
+      await axios.patch(`/api/posts/${postId}/pin`, {
+        pinned: !pinned,
+        userId: user?.id,
+      });
+      toast.success(
+        !pinned ? tPostActions('pin_success') : tPostActions('unpin_success')
+      );
+    } catch (error) {
+      console.error("Failed to pin/unpin post:", error);
+      toast.error(tPostActions('pin_failed'));
+      // Revert on error
+      fetchClassData();
+    }
+  };
+
+  const handleEditPost = async (
+    postId: string,
+    title: string,
+    content: string,
+    type: string
+  ) => {
+    try {
+      await axios.patch(`/api/posts/${postId}`, {
+        authorId: user?.id,
+        title,
+        content,
+        type,
+      });
+      toast.success(tActions('post_updated'));
+      fetchClassData();
+    } catch (error) {
+      console.error("Failed to edit post:", error);
+      toast.error(tActions('post_update_failed'));
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      await axios.delete(`/api/posts/${postId}`, {
+        data: { authorId: user?.id },
+      });
+      toast.success(tActions('post_deleted'));
+      fetchClassData();
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      toast.error(tActions('post_delete_failed'));
+    }
+  };
+
+  const handleResolvePost = async (
+    postId: string,
+    resolved: boolean,
+    commentId?: string
+  ) => {
+    if (!classData) return;
+
+    // Optimistic update
+    const updatedPosts = classData.posts.map((post) =>
+      post.id === postId
+        ? {
+            ...post,
+            resolved: !resolved,
+            resolvedCommentId: !resolved ? commentId || null : null,
+          }
+        : post
+    );
+    setClassData({ ...classData, posts: updatedPosts });
+
+    try {
+      await axios.patch(`/api/posts/${postId}/resolve`, {
+        resolved: !resolved,
+        resolvedCommentId: !resolved ? commentId : null,
+        userId: user?.id,
+      });
+      toast.success(
+        !resolved ? tPostActions('resolve_success') : tPostActions('unresolve_success')
+      );
+    } catch (error) {
+      console.error("Failed to resolve/unresolve post:", error);
+      toast.error(tPostActions('resolve_failed'));
+      // Revert on error
+      fetchClassData();
+    }
+  };
+
+  const handleMarkAsAnswer = async (
+    postId: string,
+    commentId: string,
+    isCurrentAnswer: boolean
+  ) => {
+    if (!classData) return;
+
+    // If unmarking, just unresolve the post
+    if (isCurrentAnswer) {
+      await handleResolvePost(postId, true, commentId);
+      return;
+    }
+
+    // If marking as answer, resolve the post with this comment
+    const updatedPosts = classData.posts.map((post) =>
+      post.id === postId
+        ? { ...post, resolved: true, resolvedCommentId: commentId }
+        : post
+    );
+    setClassData({ ...classData, posts: updatedPosts });
+
+    try {
+      await axios.patch(`/api/posts/${postId}/resolve`, {
+        resolved: true,
+        resolvedCommentId: commentId,
+        userId: user?.id,
+      });
+      toast.success(tPostActions('marked_as_answer'));
+    } catch (error) {
+      console.error("Failed to mark as answer:", error);
+      toast.error(tPostActions('resolve_failed'));
+      // Revert on error
+      fetchClassData();
+    }
   };
 
   const handleLeave = async () => {
@@ -720,12 +898,25 @@ export default function TeacherClassDetailPage({
                 <Flex direction="column" gap="4" className="mt-6">
                   <Flex justify="between" align="center">
                     <Heading size="6">{tSections('posts_in_class')}</Heading>
-                    <Button
-                      className="bg-mint-500 hover:bg-mint-600"
-                      onClick={() => setIsPostDialogOpen(true)}
-                    >
-                      <FiPlus size={16} /> {tButtons('create_post')}
-                    </Button>
+                    <Flex gap="2" align="center">
+                      <Select.Root value={postSortOrder} onValueChange={(value: any) => setPostSortOrder(value)} size="2">
+                        <Select.Trigger>
+                          {tPostSort('sort_by')} {tPostSort(postSortOrder)}
+                        </Select.Trigger>
+                        <Select.Content>
+                          <Select.Item value="latest">{tPostSort('latest')}</Select.Item>
+                          <Select.Item value="recently_updated">{tPostSort('recently_updated')}</Select.Item>
+                          <Select.Item value="most_votes">{tPostSort('most_votes')}</Select.Item>
+                          <Select.Item value="oldest">{tPostSort('oldest')}</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
+                      <Button
+                        className="bg-mint-500 hover:bg-mint-600"
+                        onClick={() => setIsPostDialogOpen(true)}
+                      >
+                        <FiPlus size={16} /> {tButtons('create_post')}
+                      </Button>
+                    </Flex>
                   </Flex>
 
                   <CreatePostDialog
@@ -736,12 +927,35 @@ export default function TeacherClassDetailPage({
 
                   {classData.posts && classData.posts.length > 0 ? (
                     <Flex direction="column" gap="3">
-                      {classData.posts.map((post) => {
-                        const userVote = post.votes?.find(
-                          (v: any) => v.userId === user.id
-                        );
-                        return (
-                          <PostCard
+                      {(() => {
+                        const sortedPosts = [...classData.posts].sort((a, b) => {
+                          // Pinned posts always come first
+                          if (a.pinned && !b.pinned) return -1;
+                          if (!a.pinned && b.pinned) return 1;
+
+                          // Then sort by selected order
+                          switch (postSortOrder) {
+                            case 'latest':
+                              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                            case 'oldest':
+                              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                            case 'recently_updated':
+                              return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+                            case 'most_votes':
+                              const aVotes = (a.votes?.filter((v: any) => v.voteType === 'UPVOTE').length || 0) - (a.votes?.filter((v: any) => v.voteType === 'DOWNVOTE').length || 0);
+                              const bVotes = (b.votes?.filter((v: any) => v.voteType === 'UPVOTE').length || 0) - (b.votes?.filter((v: any) => v.voteType === 'DOWNVOTE').length || 0);
+                              return bVotes - aVotes;
+                            default:
+                              return 0;
+                          }
+                        });
+
+                        return sortedPosts.map((post) => {
+                          const userVote = post.votes?.find(
+                            (v: any) => v.userId === user.id
+                          );
+                          return (
+                            <PostCard
                             key={post.id}
                             post={post}
                             currentUserId={user.id}
@@ -751,9 +965,18 @@ export default function TeacherClassDetailPage({
                             commentSortOrder={commentSortOrder}
                             onCommentSortChange={handleCommentSortChange}
                             onCommentVote={handleCommentVote}
+                            isTeacher={true}
+                            onPin={handlePinPost}
+                            onEdit={handleEditPost}
+                            onDelete={handleDeletePost}
+                            onResolve={handleResolvePost}
+                            onMarkAnswer={(postId, commentId, isCurrentAnswer) =>
+                              handleMarkAsAnswer(postId, commentId, isCurrentAnswer)
+                            }
                           />
                         );
-                      })}
+                      });
+                      })()}
                     </Flex>
                   ) : (
                     <Card className="bg-white p-8 text-center">

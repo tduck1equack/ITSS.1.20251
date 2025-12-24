@@ -12,6 +12,7 @@ import {
   Checkbox,
 } from "@radix-ui/themes";
 import { FiSettings, FiLock, FiCopy, FiCheck } from "react-icons/fi";
+import { useTranslations } from "next-intl";
 
 interface Teacher {
   id: string;
@@ -47,6 +48,7 @@ export function ClassSettingsDialog({
   classData,
   onUpdate,
 }: ClassSettingsDialogProps) {
+  const t = useTranslations('classes.settings_dialog');
   const [formData, setFormData] = useState({
     code: classData?.code || "",
     name: classData?.name || "",
@@ -102,7 +104,7 @@ export function ClassSettingsDialog({
       onOpenChange(false);
     } catch (error) {
       console.error("Failed to update class:", error);
-      alert("Không thể cập nhật thông tin lớp học");
+      alert(t('update_failed'));
     } finally {
       setLoading(false);
     }
@@ -111,16 +113,16 @@ export function ClassSettingsDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Content style={{ maxWidth: 700, maxHeight: "85vh" }}>
-        <Dialog.Title>Cấu hình lớp học</Dialog.Title>
+        <Dialog.Title>{t('title')}</Dialog.Title>
         <Dialog.Description size="2" mb="4">
-          Quản lý thông tin lớp học
+          {t('description')}
         </Dialog.Description>
 
         <form onSubmit={handleUpdateInfo}>
           <Flex direction="column" gap="3" className="mt-4">
             <label>
               <Text as="div" size="2" mb="1" weight="bold">
-                Mã lớp
+                {t('class_code')}
               </Text>
               <Flex gap="2">
                 <TextField.Root
@@ -130,16 +132,16 @@ export function ClassSettingsDialog({
                 />
                 <Button type="button" variant="soft" onClick={handleCopyCode}>
                   {copied ? <FiCheck size={16} /> : <FiCopy size={16} />}
-                  {copied ? "Đã sao chép" : "Sao chép"}
+                  {copied ? t('copied') : t('copy')}
                 </Button>
               </Flex>
               <Text size="1" className="text-gray-500 mt-1 block">
-                Mã lớp được tạo tự động và không thể thay đổi
+                {t('class_code_hint')}
               </Text>
             </label>
             <label>
               <Text as="div" size="2" mb="1" weight="bold">
-                Tên lớp <span className="text-red-500">*</span>
+                {t('class_name')} <span className="text-red-500">*</span>
               </Text>
               <TextField.Root
                 value={formData.name}
@@ -151,7 +153,7 @@ export function ClassSettingsDialog({
             </label>
             <label>
               <Text as="div" size="2" mb="1" weight="bold">
-                Mô tả
+                {t('description_label')}
               </Text>
               <TextArea
                 value={formData.description}
@@ -167,7 +169,7 @@ export function ClassSettingsDialog({
             <Flex gap="3">
               <label className="flex-1">
                 <Text as="div" size="2" mb="1" weight="bold">
-                  Học kỳ
+                  {t('semester')}
                 </Text>
                 <TextField.Root
                   value={formData.semester}
@@ -181,7 +183,7 @@ export function ClassSettingsDialog({
               </label>
               <label className="flex-1">
                 <Text as="div" size="2" mb="1" weight="bold">
-                  Năm học
+                  {t('year')}
                 </Text>
                 <TextField.Root
                   type="number"
@@ -210,18 +212,18 @@ export function ClassSettingsDialog({
                 <Flex align="center" gap="2">
                   <FiLock size={14} />
                   <Text size="2" weight="bold">
-                    Lớp riêng tư
+                    {t('private_class')}
                   </Text>
                 </Flex>
               </Flex>
               <Text size="1" className="text-gray-500 ml-6 mt-1 block">
-                Lớp riêng tư không hiển thị công khai, chỉ tham gia bằng mã lớp
+                {t('private_class_hint')}
               </Text>
             </label>
             {formData.isPrivate && classData?.joinCode && (
               <label>
                 <Text as="div" size="2" mb="1" weight="bold">
-                  Mã tham gia lớp riêng tư
+                  {t('join_code')}
                 </Text>
                 <Flex gap="2">
                   <TextField.Root
@@ -239,11 +241,11 @@ export function ClassSettingsDialog({
                     ) : (
                       <FiCopy size={16} />
                     )}
-                    {copiedJoinCode ? "Đã sao chép" : "Sao chép"}
+                    {copiedJoinCode ? t('copied') : t('copy')}
                   </Button>
                 </Flex>
                 <Text size="1" className="text-gray-500 mt-1 block">
-                  Mã này được tạo tự động và dùng để tham gia lớp riêng tư
+                  {t('join_code_hint')}
                 </Text>
               </label>
             )}
@@ -251,11 +253,11 @@ export function ClassSettingsDialog({
           <Flex gap="3" mt="4" justify="end">
             <Dialog.Close>
               <Button variant="soft" color="gray" type="button">
-                Hủy
+                {t('cancel')}
               </Button>
             </Dialog.Close>
             <Button type="submit" className="bg-mint-500" disabled={loading}>
-              {loading ? "Đang lưu..." : "Lưu thay đổi"}
+              {loading ? t('saving') : t('save_changes')}
             </Button>
           </Flex>
         </form>

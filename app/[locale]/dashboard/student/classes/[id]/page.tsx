@@ -15,6 +15,7 @@ import {
   Avatar,
   TextField,
   Dialog,
+  Select,
 } from "@radix-ui/themes";
 import {
   FiBook,
@@ -111,6 +112,8 @@ export default function StudentClassDetailPage({
   const tButtons = useTranslations('classes.detail.buttons');
   const tEmpty = useTranslations('classes.detail.empty_states');
   const tActions = useTranslations('classes.detail.actions');
+  const tPostSort = useTranslations('posts.sorting');
+  const tPostActions = useTranslations('posts.actions');
   const [classData, setClassData] = useState<ClassData | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState<Record<string, string>>({});
@@ -125,6 +128,7 @@ export default function StudentClassDetailPage({
   const [commentSortOrder, setCommentSortOrder] = useState<"time" | "votes">(
     "time"
   );
+  const [postSortOrder, setPostSortOrder] = useState<"latest" | "oldest" | "most_votes" | "recently_updated">("latest");
 
   const fetchClassData = async () => {
     try {
@@ -215,19 +219,63 @@ export default function StudentClassDetailPage({
     content: string,
     attachments?: FileAttachment[]
   ) => {
-    if (!content?.trim()) return;
+    if (!content?.trim() || !classData) return;
+
+    // Create optimistic comment
+    const optimisticComment = {
+      id: `temp-${Date.now()}`,
+      content,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      authorId: user?.id || '',
+      author: {
+        id: user?.id || '',
+        name: user?.name || '',
+        email: user?.email || '',
+      },
+      votes: [],
+      attachments: attachments || [],
+    };
+
+    // Optimistic update
+    const updatedPosts = classData.posts.map((post) => {
+      if (post.id !== postId) return post;
+      return {
+        ...post,
+        comments: [...(post.comments || []), optimisticComment],
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    setClassData({ ...classData, posts: updatedPosts });
+    toast.success(tActions('comment_added'));
 
     try {
-      await axios.post(`/api/posts/${postId}/comments`, {
+      const response = await axios.post(`/api/posts/${postId}/comments`, {
         authorId: user?.id,
         content,
         attachments,
       });
-      fetchClassData();
-      toast.success(tActions('comment_added'));
+
+      // Replace optimistic comment with real data
+      const realComment = response.data;
+      const finalPosts = classData.posts.map((post) => {
+        if (post.id !== postId) return post;
+        return {
+          ...post,
+          comments: [
+            ...(post.comments || []).filter((c: any) => c.id !== optimisticComment.id),
+            realComment,
+          ],
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      setClassData({ ...classData, posts: finalPosts });
     } catch (error) {
       console.error("Failed to comment:", error);
       toast.error(tActions('comment_failed'));
+      // Revert optimistic update
+      fetchClassData();
     }
   };
 
@@ -477,12 +525,25 @@ export default function StudentClassDetailPage({
                 <Flex direction="column" gap="4" className="mt-6">
                   <Flex justify="between" align="center">
                     <Heading size="6">{tSections('posts_in_class')}</Heading>
-                    <Button
-                      className="bg-mint-500 hover:bg-mint-600"
-                      onClick={() => setIsPostDialogOpen(true)}
-                    >
-                      <FiPlus size={16} /> {tButtons('create_post')}
-                    </Button>
+                    <Flex gap="2" align="center">
+                      <Select.Root value={postSortOrder} onValueChange={(value: any) => setPostSortOrder(value)} size="2">
+                        <Select.Trigger>
+                          {tPostSort('sort_by')} {tPostSort(postSortOrder)}
+                        </Select.Trigger>
+                        <Select.Content>
+                          <Select.Item value="latest">{tPostSort('latest')}</Select.Item>
+                          <Select.Item value="recently_updated">{tPostSort('recently_updated')}</Select.Item>
+                          <Select.Item value="most_votes">{tPostSort('most_votes')}</Select.Item>
+                          <Select.Item value="oldest">{tPostSort('oldest')}</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
+                      <Button
+                        className="bg-mint-500 hover:bg-mint-600"
+                        onClick={() => setIsPostDialogOpen(true)}
+                      >
+                        <FiPlus size={16} /> {tButtons('create_post')}
+                      </Button>
+                    </Flex>
                   </Flex>
 
                   <CreatePostDialog
@@ -493,25 +554,49 @@ export default function StudentClassDetailPage({
 
                   {classData.posts && classData.posts.length > 0 ? (
                     <Flex direction="column" gap="3">
-                      {classData.posts.map((post) => {
-                        const userVote = post.votes?.find(
-                          (v: any) => v.userId === user.id
-                        );
+                      {(() => {
+                        const sortedPosts = [...classData.posts].sort((a, b) => {
+                          // Pinned posts always come first
+                          if (a.pinned && !b.pinned) return -1;
+                          if (!a.pinned && b.pinned) return 1;
 
-                        return (
-                          <PostCard
-                            key={post.id}
-                            post={post}
-                            currentUserId={user.id}
-                            userVote={userVote}
-                            onVote={handleVote}
-                            onComment={handleComment}
-                            commentSortOrder={commentSortOrder}
-                            onCommentSortChange={handleCommentSortChange}
-                            onCommentVote={handleCommentVote}
-                          />
-                        );
-                      })}
+                          // Then sort by selected order
+                          switch (postSortOrder) {
+                            case 'latest':
+                              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                            case 'oldest':
+                              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                            case 'recently_updated':
+                              return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+                            case 'most_votes':
+                              const aVotes = (a.votes?.filter((v: any) => v.voteType === 'UPVOTE').length || 0) - (a.votes?.filter((v: any) => v.voteType === 'DOWNVOTE').length || 0);
+                              const bVotes = (b.votes?.filter((v: any) => v.voteType === 'UPVOTE').length || 0) - (b.votes?.filter((v: any) => v.voteType === 'DOWNVOTE').length || 0);
+                              return bVotes - aVotes;
+                            default:
+                              return 0;
+                          }
+                        });
+
+                        return sortedPosts.map((post) => {
+                          const userVote = post.votes?.find(
+                            (v: any) => v.userId === user.id
+                          );
+
+                          return (
+                            <PostCard
+                              key={post.id}
+                              post={post}
+                              currentUserId={user.id}
+                              userVote={userVote}
+                              onVote={handleVote}
+                              onComment={handleComment}
+                              commentSortOrder={commentSortOrder}
+                              onCommentSortChange={handleCommentSortChange}
+                              onCommentVote={handleCommentVote}
+                            />
+                          );
+                        });
+                      })()}
                     </Flex>
                   ) : (
                     <Card className="bg-white p-8 text-center">

@@ -227,46 +227,117 @@
         "attachments": "Tệp đính kèm",
         "groups": "Nhóm",
         "attendance": "Điểm danh",
-        "members": "Thành viên"
+        "members": "Thành viên",
+        "students": "Sinh viên"
       },
       "sections": {
         "posts_in_class": "Bài viết trong lớp",
+        "assignments": "Bài tập",
         "assignments_title": "Bài tập",
+        "learning_materials": "Tài liệu học tập",
         "materials_title": "Tài liệu học tập",
+        "attachments": "Tệp đính kèm",
+        "attendance": "Điểm danh",
+        "attendance_code": "Mã điểm danh",
+        "started_at": "Bắt đầu lúc",
+        "status_active": "Đang hoạt động",
+        "status_expired": "Đã hết hạn",
+        "status_closed": "Đã đóng",
+        "students_short": "SV",
         "my_group": "Nhóm của tôi",
-        "members_count": "Thành viên lớp ({count})"
+        "members_count": "Thành viên lớp ({count})",
+        "teachers": "Giảng viên",
+        "teacher": "Giảng viên",
+        "students": "Sinh viên",
+        "student_list": "Danh sách sinh viên"
       },
       "buttons": {
+        "enrolled": "Đã đăng ký",
+        "teaching": "Đang giảng dạy",
+        "join": "Tham gia",
         "leave_class": "Rời khỏi lớp",
         "create_post": "Tạo bài viết",
         "create_assignment": "Tạo bài tập",
         "upload_material": "Tải lên tài liệu",
         "upload_attachment": "Tải lên tệp",
+        "upload_file": "Tải lên tệp",
+        "class_settings": "Cài đặt lớp học",
         "configure_class": "Cấu hình lớp",
         "manage_members": "Quản lý thành viên",
         "configure_groups": "Cấu hình nhóm",
+        "create_groups": "Tạo nhóm",
+        "join_teaching": "Tham gia giảng dạy",
+        "start_attendance": "Bắt đầu điểm danh",
         "delete_class": "Xóa lớp"
       },
       "empty_states": {
         "no_posts": "Chưa có bài viết nào",
+        "no_groups": "Chưa có nhóm nào",
+        "not_assigned_to_group": "Bạn chưa được phân công vào nhóm nào",
         "no_assignments": "Chưa có bài tập nào",
+        "no_assignments_prompt": "Chưa có bài tập nào trong lớp này",
         "no_materials": "Chưa có tài liệu học tập nào",
         "no_attachments": "Chưa có tệp đính kèm nào",
+        "no_attendance_sessions": "Chưa có phiên điểm danh nào",
         "no_group": "Bạn chưa thuộc nhóm nào",
         "no_members": "Không có thành viên"
       },
       "actions": {
         "post_created": "Đã đăng bài viết",
+        "post_created_success": "Bài viết đã được tạo thành công",
         "post_created_message": "Bài viết đã được tạo thành công",
+        "post_failed": "Không thể tạo bài viết",
+        "vote_failed": "Không thể bình chọn",
+        "comment_added": "Đã thêm bình luận",
+        "comment_failed": "Không thể thêm bình luận",
+        "comment_vote_failed": "Không thể bình chọn bình luận",
+        "error": "Lỗi",
+        "left_class": "Đã rời khỏi lớp",
+        "leave_class_failed": "Không thể rời khỏi lớp",
         "leave_class_title": "Rời khỏi lớp",
         "leave_class_message": "Bạn có chắc chắn muốn rời khỏi lớp này?",
         "delete_class_title": "Xóa lớp học",
-        "delete_class_message": "Bạn có chắc chắn muốn xóa lớp học này? Hành động này không thể hoàn tác."
+        "delete_class_message": "Bạn có chắc chắn muốn xóa lớp học này? Hành động này không thể hoàn tác.",
+        "confirm_leave_class": "Xác nhận rời khỏi lớp",
+        "confirm_leave_class_description": "Bạn có chắc chắn muốn rời khỏi lớp này? Bạn có thể đăng ký lại sau.",
+        "confirm_delete_class": "Xác nhận xóa lớp học",
+        "confirm_delete_class_description": "Bạn có chắc chắn muốn xóa lớp học này? Hành động này không thể hoàn tác.",
+        "confirm_leave_teaching": "Xác nhận rời khỏi giảng dạy",
+        "confirm_leave_teaching_description": "Bạn có chắc chắn muốn rời khỏi giảng dạy lớp này?",
+        "fetch_attachments_failed": "Không thể tải tệp đính kèm",
+        "fetch_materials_failed": "Không thể tải tài liệu",
+        "fetch_assignments_failed": "Không thể tải bài tập",
+        "uploaded": "Đã tải lên",
+        "file_uploaded_success": "Tệp đã được tải lên thành công",
+        "upload_failed": "Không thể tải lên tệp",
+        "confirm_delete_file": "Bạn có chắc chắn muốn xóa tệp này?",
+        "file_deleted": "Tệp đã được xóa",
+        "delete_failed": "Không thể xóa tệp",
+        "joined_class": "Đã tham gia lớp",
+        "join_class_failed": "Không thể tham gia lớp",
+        "joined_teaching_class": "Bạn đã tham gia giảng dạy lớp học này",
+        "can_rejoin_anytime": "Bạn có thể tham gia lại bất cứ lúc nào",
+        "class_deleted_success": "Lớp học đã được xóa thành công",
+        "delete_class_failed": "Không thể xóa lớp học",
+        "assignment_created_success": "Bài tập đã được tạo thành công",
+        "create_assignment_failed": "Không thể tạo bài tập",
+        "delete_assignment_failed": "Không thể xóa bài tập",
+        "coming_soon": "Sắp ra mắt",
+        "material_upload_coming_soon": "Tính năng tải lên tài liệu sắp ra mắt",
+        "material_delete_coming_soon": "Tính năng xóa tài liệu sắp ra mắt",
+        "group_config_saved": "Đã lưu cấu hình nhóm",
+        "save_groups_failed": "Không thể lưu cấu hình nhóm",
+        "members_saved": "Đã lưu thành viên",
+        "save_members_failed": "Không thể lưu thành viên"
       }
     },
     "actions": {
       "post_created_success": "Đã đăng bài viết",
       "post_created_message": "Bài viết đã được tạo thành công",
+      "post_updated": "Đã cập nhật bài viết",
+      "post_update_failed": "Không thể cập nhật bài viết",
+      "post_deleted": "Đã xóa bài viết",
+      "post_delete_failed": "Không thể xóa bài viết",
       "error": "Lỗi",
       "cannot_create_post": "Không thể tạo bài viết",
       "cannot_vote_post": "Không thể bình chọn bài viết",
@@ -339,6 +410,84 @@
       "confirm_delete_desc": "Bạn có chắc chắn muốn xóa lớp học này? Hành động này không thể hoàn tác.",
       "confirm_leave_teaching_title": "Xác nhận rời khỏi lớp giảng dạy",
       "confirm_leave_teaching_desc": "Bạn có chắc chắn muốn rời khỏi giảng dạy lớp học này? Bạn có thể tham gia lại sau."
+    },
+    "members_dialog": {
+      "title": "Quản lý thành viên lớp",
+      "unsaved_changes": "Thay đổi chưa lưu:",
+      "added_teachers": "✓ Thêm giảng viên:",
+      "removed_teachers": "✗ Xóa giảng viên:",
+      "added_students": "✓ Thêm sinh viên:",
+      "removed_students": "✗ Xóa sinh viên:",
+      "teachers_tab": "Giảng viên",
+      "students_tab": "Sinh viên",
+      "add_teacher": "Thêm giảng viên",
+      "add_student": "Thêm sinh viên",
+      "search_teacher_placeholder": "Tìm theo tên hoặc email...",
+      "search_student_placeholder": "Tìm theo tên, email hoặc MSSV...",
+      "loading": "Đang tải...",
+      "add": "Thêm",
+      "remove": "Xóa",
+      "no_teachers_found": "Không tìm thấy giảng viên",
+      "all_teachers_added": "Tất cả giảng viên đã được thêm",
+      "no_students_found": "Không tìm thấy sinh viên",
+      "all_students_added": "Tất cả sinh viên đã được thêm",
+      "current_teachers": "Giảng viên hiện tại",
+      "current_students": "Sinh viên hiện tại",
+      "creator_badge": "Người tạo",
+      "creator_cannot_remove": "Người tạo lớp không thể xóa chính mình",
+      "cancel": "Hủy",
+      "save_changes": "Lưu thay đổi",
+      "saving": "Đang lưu..."
+    },
+    "groups_dialog": {
+      "title": "Quản lý nhóm",
+      "random_tab": "Chia ngẫu nhiên",
+      "manual_tab": "Thủ công",
+      "unsaved_changes": "Thay đổi chưa lưu:",
+      "added_groups": "✓ Thêm mới:",
+      "deleted_groups": "✗ Xóa:",
+      "edited_groups": "⟳ Đã chỉnh sửa {count} nhóm",
+      "num_groups_label": "Số lượng nhóm",
+      "num_groups_placeholder": "Nhập số nhóm...",
+      "divide_random": "Chia ngẫu nhiên",
+      "result_label": "Kết quả chia nhóm ({count} nhóm)",
+      "members_count": "{count} thành viên",
+      "groups_list": "Danh sách nhóm ({count})",
+      "add_group": "Thêm nhóm",
+      "no_members": "Chưa có thành viên",
+      "unassigned_label": "Chưa phân nhóm ({count})",
+      "search_student_placeholder": "Tìm kiếm sinh viên...",
+      "no_students_found": "Không tìm thấy sinh viên",
+      "all_students_assigned": "Tất cả sinh viên đã được phân nhóm",
+      "cancel": "Hủy",
+      "save_groups": "Lưu nhóm",
+      "saving": "Đang lưu...",
+      "error_empty_input": "Vui lòng nhập số lượng nhóm",
+      "error_invalid_number": "Số lượng nhóm phải là số nguyên dương",
+      "error_no_students": "Không có sinh viên để phân nhóm",
+      "error_invalid_input": "Đầu vào không hợp lệ! Chỉ nhập một số nguyên dương.",
+      "error_not_integer": "Đầu vào không hợp lệ! Chỉ nhập số nguyên dương.",
+      "error_must_positive": "Đầu vào không hợp lệ! Số phải lớn hơn 0."
+    },
+    "settings_dialog": {
+      "title": "Cấu hình lớp học",
+      "description": "Quản lý thông tin lớp học",
+      "class_code": "Mã lớp",
+      "class_code_hint": "Mã lớp được tạo tự động và không thể thay đổi",
+      "class_name": "Tên lớp",
+      "description_label": "Mô tả",
+      "semester": "Học kỳ",
+      "year": "Năm học",
+      "private_class": "Lớp riêng tư",
+      "private_class_hint": "Lớp riêng tư không hiển thị công khai, chỉ tham gia bằng mã lớp",
+      "join_code": "Mã tham gia lớp riêng tư",
+      "join_code_hint": "Mã này được tạo tự động và dùng để tham gia lớp riêng tư",
+      "copy": "Sao chép",
+      "copied": "Đã sao chép",
+      "cancel": "Hủy",
+      "save_changes": "Lưu thay đổi",
+      "saving": "Đang lưu...",
+      "update_failed": "Không thể cập nhật thông tin lớp học"
     }
   },
   "attendance": {
@@ -385,6 +534,11 @@
     }
   },
   "posts": {
+    "types": {
+      "announcement": "Thông báo",
+      "material": "Tài liệu",
+      "discussion": "Thảo luận"
+    },
     "create": {
       "dialog_title": "Tạo bài viết mới",
       "type_label": "Loại bài viết",
@@ -399,6 +553,42 @@
       "cancel": "Hủy",
       "post": "Đăng bài"
     },
+    "dialogs": {
+      "edit_post": "Chỉnh sửa bài viết",
+      "title_label": "Tiêu đề",
+      "title_placeholder": "Nhập tiêu đề",
+      "type_label": "Loại bài viết",
+      "content_label": "Nội dung",
+      "content_placeholder": "Nhập nội dung bài viết",
+      "cancel": "Hủy",
+      "save_changes": "Lưu thay đổi"
+    },
+    "sorting": {
+      "sort_by": "Sắp xếp theo:",
+      "latest": "Mới nhất",
+      "oldest": "Cũ nhất",
+      "most_votes": "Nhiều vote nhất",
+      "recently_updated": "Cập nhật gần đây"
+    },
+    "actions": {
+      "pin_post": "Ghim bài viết",
+      "unpin_post": "Bỏ ghim",
+      "pinned": "Đã ghim",
+      "pin_success": "Đã ghim bài viết",
+      "unpin_success": "Đã bỏ ghim bài viết",
+      "pin_failed": "Không thể ghim bài viết",
+      "resolve_post": "Đánh dấu là đã giải quyết",
+      "unresolve_post": "Bỏ đánh dấu đã giải quyết",
+      "resolved": "Đã giải quyết",
+      "resolve_success": "Đã đánh dấu bài viết là đã giải quyết",
+      "unresolve_success": "Đã bỏ đánh dấu đã giải quyết",
+      "resolve_failed": "Không thể đánh dấu bài viết",
+      "mark_as_answer": "Đánh dấu là câu trả lời đúng",
+      "unmark_as_answer": "Bỏ đánh dấu câu trả lời đúng",
+      "correct_answer": "Câu trả lời đúng",
+      "marked_as_answer": "Đã đánh dấu là câu trả lời đúng",
+      "unmarked_as_answer": "Đã bỏ đánh dấu câu trả lời đúng"
+    },
     "card": {
       "posted_at": "Đăng lúc",
       "edited": "(đã sửa)",
@@ -409,6 +599,22 @@
       "comment_placeholder": "Viết bình luận...",
       "add_attachments": "Thêm tệp đính kèm",
       "send": "Gửi"
+    },
+    "page": {
+      "student": {
+        "title": "Bài viết của tôi",
+        "maintenance_title": "🚧 Đang bảo trì",
+        "maintenance_desc": "Tính năng quản lý bài viết đang được phát triển. Bạn sẽ có thể xem tất cả các bài viết đã đăng, chỉnh sửa, và xóa bài viết trong các phiên bản tiếp theo.",
+        "planned_features": "Dự kiến bao gồm: Bài viết của tôi, Bài viết đã lưu, Thống kê tương tác.",
+        "back_to_classes": "← Quay lại lớp học"
+      },
+      "teacher": {
+        "title": "Bài viết của tôi",
+        "maintenance_title": "🚧 Đang bảo trì",
+        "maintenance_desc": "Tính năng quản lý bài viết đang được phát triển. Bạn sẽ có thể xem tất cả các bài viết đã đăng, chỉnh sửa, xóa, và ghim bài viết trong các phiên bản tiếp theo.",
+        "planned_features": "Dự kiến bao gồm: Bài viết của tôi, Thông báo quan trọng, Thống kê tương tác, Ghim bài viết.",
+        "back_to_classes": "← Quay lại lớp học"
+      }
     }
   },
   "comments": {
@@ -520,24 +726,6 @@
         "maintenance_title": "🚧 Đang bảo trì",
         "maintenance_desc": "Tính năng quản lý nhóm đang được phát triển. Bạn sẽ có thể tạo nhóm, phân công sinh viên, theo dõi tiến độ nhóm trong các phiên bản tiếp theo.",
         "planned_features": "Dự kiến bao gồm: Tạo nhóm, Phân công sinh viên, Theo dõi hoạt động, Đánh giá nhóm.",
-        "back_to_classes": "← Quay lại lớp học"
-      }
-    }
-  },
-  "posts": {
-    "page": {
-      "student": {
-        "title": "Bài viết của tôi",
-        "maintenance_title": "🚧 Đang bảo trì",
-        "maintenance_desc": "Tính năng quản lý bài viết đang được phát triển. Bạn sẽ có thể xem tất cả các bài viết đã đăng, chỉnh sửa, và xóa bài viết trong các phiên bản tiếp theo.",
-        "planned_features": "Dự kiến bao gồm: Bài viết của tôi, Bài viết đã lưu, Thống kê tương tác.",
-        "back_to_classes": "← Quay lại lớp học"
-      },
-      "teacher": {
-        "title": "Bài viết của tôi",
-        "maintenance_title": "🚧 Đang bảo trì",
-        "maintenance_desc": "Tính năng quản lý bài viết đang được phát triển. Bạn sẽ có thể xem tất cả các bài viết đã đăng, chỉnh sửa, xóa, và ghim bài viết trong các phiên bản tiếp theo.",
-        "planned_features": "Dự kiến bao gồm: Bài viết của tôi, Thông báo quan trọng, Thống kê tương tác, Ghim bài viết.",
         "back_to_classes": "← Quay lại lớp học"
       }
     }

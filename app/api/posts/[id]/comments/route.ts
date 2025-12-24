@@ -48,6 +48,12 @@ export async function POST(
       },
     });
 
+    // Update parent post's updatedAt timestamp
+    await prisma.post.update({
+      where: { id },
+      data: { updatedAt: new Date() },
+    });
+
     return NextResponse.json(comment, { status: 201 });
   } catch (error) {
     console.error("Error creating comment:", error);

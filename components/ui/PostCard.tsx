@@ -13,6 +13,7 @@ import {
   Dialog,
   TextArea,
   Select,
+  Tooltip,
 } from "@radix-ui/themes";
 import {
   FiMessageSquare,
@@ -22,11 +23,16 @@ import {
   FiEdit2,
   FiTrash2,
   FiPaperclip,
+  FiMapPin,
+  FiCheckCircle,
+  FiCheck,
 } from "react-icons/fi";
 import { CommentCard } from "./CommentCard";
 import { AttachmentCard } from "./AttachmentCard";
 import { FilePickerInput, FileAttachment } from "./FilePickerInput";
+import { VoteButtons } from "./VoteButtons";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface PostCardProps {
   post: {
@@ -37,6 +43,9 @@ interface PostCardProps {
     createdAt: Date | string;
     updatedAt: Date | string;
     authorId: string;
+    pinned?: boolean;
+    resolved?: boolean;
+    resolvedCommentId?: string | null;
     author?: {
       id: string;
       name: string;
@@ -99,6 +108,10 @@ interface PostCardProps {
   onCommentDelete?: (commentId: string) => void;
   commentSortOrder?: "time" | "votes";
   onCommentSortChange?: (order: "time" | "votes") => void;
+  isTeacher?: boolean;
+  onPin?: (postId: string, pinned: boolean) => void;
+  onResolve?: (postId: string, resolved: boolean, commentId?: string) => void;
+  onMarkAnswer?: (postId: string, commentId: string, isCurrentAnswer: boolean) => void;
 }
 
 export function PostCard({
@@ -114,7 +127,14 @@ export function PostCard({
   onCommentDelete,
   commentSortOrder = "time",
   onCommentSortChange,
+  isTeacher = false,
+  onPin,
+  onResolve,
+  onMarkAnswer,
 }: PostCardProps) {
+  const tPostActions = useTranslations('posts.actions');
+  const tPostTypes = useTranslations('posts.types');
+  const tPostDialogs = useTranslations('posts.dialogs');
   const [commentText, setCommentText] = useState("");
   const [commentAttachments, setCommentAttachments] = useState<
     FileAttachment[]
@@ -125,10 +145,6 @@ export function PostCard({
   const [editContent, setEditContent] = useState(post.content);
   const [editType, setEditType] = useState(post.type);
 
-  const upvotes =
-    post.votes?.filter((v) => v.voteType === "UPVOTE").length || 0;
-  const downvotes =
-    post.votes?.filter((v) => v.voteType === "DOWNVOTE").length || 0;
   const isAuthor = post.authorId === currentUserId;
 
   // Sort comments
@@ -171,6 +187,17 @@ export function PostCard({
   return (
     <Card key={post.id} className="bg-white p-4">
       <Flex gap="3">
+        {/* Vote Buttons - Reddit Style */}
+        {onVote && (
+          <VoteButtons
+            votes={post.votes}
+            userVote={userVote}
+            onVote={(voteType) => onVote(post.id, voteType)}
+            size="medium"
+          />
+        )}
+
+        {/* Post Avatar and Content */}
         <Avatar
           size="3"
           src={post.author?.avatar}
@@ -192,15 +219,50 @@ export function PostCard({
                   color={post.type === "ANNOUNCEMENT" ? "red" : "gray"}
                 >
                   {post.type === "ANNOUNCEMENT"
-                    ? "Thông báo"
+                    ? tPostTypes('announcement')
                     : post.type === "MATERIAL"
-                    ? "Tài liệu"
-                    : "Thảo luận"}
+                    ? tPostTypes('material')
+                    : tPostTypes('discussion')}
                 </Badge>
+                {post.pinned && (
+                  <Badge size="1" color="orange">
+                    <FiMapPin size={12} /> {tPostActions('pinned')}
+                  </Badge>
+                )}
+                {post.resolved && (
+                  <Badge size="1" color="green">
+                    <FiCheckCircle size={12} /> {tPostActions('resolved')}
+                  </Badge>
+                )}
               </Flex>
-              {isAuthor && (
-                <Flex gap="1">
-                  <IconButton
+              <Flex gap="1">
+                {isTeacher && onPin && (
+                  <Tooltip content={post.pinned ? tPostActions('unpin_post') : tPostActions('pin_post')}>
+                    <IconButton
+                      size="1"
+                      variant="ghost"
+                      color={post.pinned ? "orange" : "gray"}
+                      onClick={() => onPin(post.id, post.pinned || false)}
+                    >
+                      <FiMapPin size={14} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {isTeacher && onResolve && (
+                  <Tooltip content={post.resolved ? tPostActions('unresolve_post') : tPostActions('resolve_post')}>
+                    <IconButton
+                      size="1"
+                      variant="ghost"
+                      color={post.resolved ? "green" : "gray"}
+                      onClick={() => onResolve(post.id, post.resolved || false, post.resolvedCommentId || undefined)}
+                    >
+                      <FiCheckCircle size={14} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {isAuthor && (
+                  <>
+                    <IconButton
                     size="1"
                     variant="soft"
                     color="gray"
@@ -216,8 +278,9 @@ export function PostCard({
                   >
                     <FiTrash2 size={14} />
                   </IconButton>
-                </Flex>
-              )}
+                  </>
+                )}
+              </Flex>
             </Flex>
             <Text size="1" className="text-gray-500">
               {new Date(post.createdAt).toLocaleString("vi-VN")}
@@ -232,37 +295,25 @@ export function PostCard({
           {/* Attachments */}
           {post.attachments && post.attachments.length > 0 && (
             <Flex direction="column" gap="2" className="mt-2">
-              {post.attachments.map((att) => (
-                <AttachmentCard key={att.id} attachment={att} />
+              {post.attachments.map((attachment) => (
+                <a
+                  key={attachment.id}
+                  href={attachment.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 p-2 bg-mint-50 hover:bg-mint-100 rounded-md transition-colors"
+                >
+                  <FiPaperclip size={16} className="text-mint-600" />
+                  <Text size="2" className="text-mint-600 font-medium">
+                    {attachment.fileName}
+                  </Text>
+                  {attachment.fileSize && (
+                    <Text size="1" className="text-gray-500">
+                      ({Math.round(attachment.fileSize / 1024)} KB)
+                    </Text>
+                  )}
+                </a>
               ))}
-            </Flex>
-          )}
-
-          {/* Vote buttons */}
-          {onVote && (
-            <Flex gap="3" align="center">
-              <Flex gap="2">
-                <Button
-                  size="1"
-                  variant={userVote?.voteType === "UPVOTE" ? "solid" : "soft"}
-                  color={userVote?.voteType === "UPVOTE" ? "mint" : "gray"}
-                  onClick={() => onVote(post.id, "UPVOTE")}
-                >
-                  <FiThumbsUp size={14} /> {upvotes}
-                </Button>
-                <Button
-                  size="1"
-                  variant={userVote?.voteType === "DOWNVOTE" ? "solid" : "soft"}
-                  color={userVote?.voteType === "DOWNVOTE" ? "red" : "gray"}
-                  onClick={() => onVote(post.id, "DOWNVOTE")}
-                >
-                  <FiThumbsDown size={14} /> {downvotes}
-                </Button>
-              </Flex>
-              <Flex align="center" gap="1" className="text-gray-600">
-                <FiMessageSquare size={16} />
-                <Text size="2">{post.comments?.length || 0} bình luận</Text>
-              </Flex>
             </Flex>
           )}
 
@@ -298,6 +349,7 @@ export function PostCard({
                   const userCommentVote = comment.votes?.find(
                     (v) => v.userId === currentUserId
                   );
+                  const isCorrectAnswer = post.resolvedCommentId === comment.id;
                   return (
                     <CommentCard
                       key={comment.id}
@@ -307,6 +359,14 @@ export function PostCard({
                       onVote={onCommentVote}
                       onEdit={onCommentEdit}
                       onDelete={onCommentDelete}
+                      isCorrectAnswer={isCorrectAnswer}
+                      isTeacher={isTeacher}
+                      onMarkAnswer={
+                        onMarkAnswer
+                          ? (commentId, isCurrentAnswer) =>
+                              onMarkAnswer(post.id, commentId, isCurrentAnswer)
+                          : undefined
+                      }
                     />
                   );
                 })}
@@ -363,46 +423,46 @@ export function PostCard({
       {/* Edit Dialog */}
       <Dialog.Root open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <Dialog.Content style={{ maxWidth: 600 }}>
-          <Dialog.Title>Chỉnh sửa bài viết</Dialog.Title>
+          <Dialog.Title>{tPostDialogs('edit_post')}</Dialog.Title>
           <Flex direction="column" gap="3" className="mt-4">
             <label>
               <Text as="div" size="2" mb="1" weight="bold">
-                Tiêu đề
+                {tPostDialogs('title_label')}
               </Text>
               <TextField.Root
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="Nhập tiêu đề"
+                placeholder={tPostDialogs('title_placeholder')}
               />
             </label>
             <label>
               <Text as="div" size="2" mb="1" weight="bold">
-                Loại bài viết
+                {tPostDialogs('type_label')}
               </Text>
               <Select.Root value={editType} onValueChange={setEditType}>
                 <Select.Trigger />
                 <Select.Content>
-                  <Select.Item value="DISCUSSION">Thảo luận</Select.Item>
-                  <Select.Item value="ANNOUNCEMENT">Thông báo</Select.Item>
-                  <Select.Item value="MATERIAL">Tài liệu</Select.Item>
+                  <Select.Item value="DISCUSSION">{tPostTypes('discussion')}</Select.Item>
+                  <Select.Item value="ANNOUNCEMENT">{tPostTypes('announcement')}</Select.Item>
+                  <Select.Item value="MATERIAL">{tPostTypes('material')}</Select.Item>
                 </Select.Content>
               </Select.Root>
             </label>
             <label>
               <Text as="div" size="2" mb="1" weight="bold">
-                Nội dung
+                {tPostDialogs('content_label')}
               </Text>
               <TextArea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                placeholder="Nhập nội dung"
+                placeholder={tPostDialogs('content_placeholder')}
                 rows={6}
               />
             </label>
             <Flex gap="3" justify="end">
               <Dialog.Close>
                 <Button variant="soft" color="gray">
-                  Hủy
+                  {tPostDialogs('cancel')}
                 </Button>
               </Dialog.Close>
               <Button
@@ -410,7 +470,7 @@ export function PostCard({
                 className="bg-mint-500"
                 disabled={!editTitle.trim() || !editContent.trim()}
               >
-                Lưu thay đổi
+                {tPostDialogs('save_changes')}
               </Button>
             </Flex>
           </Flex>

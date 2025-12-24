@@ -37,7 +37,7 @@ export async function setLocalizedField(
       entityType_entityId_locale_field: {
         entityType,
         entityId,
-        locale: locale.toUpperCase() as Locale,
+        locale: locale as Locale,
         field,
       },
     },
@@ -48,7 +48,7 @@ export async function setLocalizedField(
     create: {
       entityType,
       entityId,
-      locale: locale.toUpperCase() as Locale,
+      locale: locale as Locale,
       field,
       value,
     },
@@ -72,7 +72,7 @@ export async function getLocalizedField(
       entityType_entityId_locale_field: {
         entityType,
         entityId,
-        locale: locale.toUpperCase() as Locale,
+        locale: locale as Locale,
         field,
       },
     },
@@ -95,7 +95,7 @@ export async function getAllLocalizations(
     where: {
       entityType,
       entityId,
-      locale: locale.toUpperCase() as Locale,
+      locale: locale as Locale,
     },
   });
 
