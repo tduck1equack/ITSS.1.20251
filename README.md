@@ -8,10 +8,18 @@ Trước khi bắt đầu, hãy đảm bảo bạn đã cài đặt các phần 
 
 - **Git** - Hệ thống quản lý phiên bản
   - Tải về tại: [https://git-scm.com/downloads](https://git-scm.com/downloads)
-- **PostgreSQL** (phiên bản 12 trở lên) - Hệ quản trị cơ sở dữ liệu
-  - Tải về tại: [https://www.postgresql.org/download/](https://www.postgresql.org/download/)
 - **Node.js** (phiên bản 18 trở lên) - Môi trường chạy JavaScript
   - Tải về tại: [https://nodejs.org/](https://nodejs.org/)
+
+**Chọn một trong hai phương án setup Database:**
+
+### Phương án A: Sử dụng Docker (Khuyến nghị)
+- **Docker** - Platform để chạy containers
+  - Tải về tại: [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
+
+### Phương án B: Cài đặt PostgreSQL thủ công
+- **PostgreSQL** (phiên bản 12 trở lên) - Hệ quản trị cơ sở dữ liệu
+  - Tải về tại: [https://www.postgresql.org/download/](https://www.postgresql.org/download/)
 
 ## Hướng dẫn cài đặt
 
@@ -36,31 +44,85 @@ cp .env.example .env
 copy .env.example .env
 ```
 
-Sau đó mở file `.env` và cập nhật chuỗi kết nối cơ sở dữ liệu:
+Mở file `.env` và cập nhật các biến môi trường. File `.env.example` đã có sẵn cấu hình mẫu:
 
 ```env
-DATABASE_URL=postgresql://username:password@localhost:5432/database_name
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=123456789
+POSTGRES_DB=course_management
+POSTGRES_URL=postgresql://postgres:123456789@localhost:5432/course_management
 ```
 
-**Giải thích chuỗi kết nối PostgreSQL:**
+> **Lưu ý:** Bạn có thể thay đổi username, password và tên database theo ý muốn, nhưng đảm bảo các giá trị này khớp nhau trong chuỗi `POSTGRES_URL`.
 
-- `username`: Tên người dùng PostgreSQL của bạn (mặc định thường là `postgres`)
+### 3. Khởi động Database
+
+#### Phương án A: Sử dụng Docker (Khuyến nghị)
+
+Docker giúp việc setup database trở nên đơn giản và nhất quán trên mọi hệ điều hành.
+
+**Bước 1: Khởi động PostgreSQL container**
+
+```bash
+docker compose up -d
+```
+
+Lệnh này sẽ:
+- Tải image PostgreSQL 17 (nếu chưa có)
+- Tạo và chạy container với tên `lms_postgres`
+- Cài đặt dependencies và khởi tạo database
+
+Chạy các lệnh sau theo thứ tự:
+
+```bash
+# Cài đặt các package cần thiết
+npm i
+
+# Đẩy schema database lên PostgreSQL
+npm run db:push
+
+# Seed dữ liệu mẫu vào database
+npm run db:seed
+```
+
+**Giải thích:**
+
+- `npm i` - Cài đặt tất cả các package được liệt kê trong `package.json`
+- `npm run db:push` - Tạo các bảng trong database theo schema Prisma
+- `npm run db:seed` - Thêm dữ liệu mẫu (10 giảng viên, 100 sinh viên, 7 lớp học)
+
+### 5r compose down -v
+
+# Khởi động lại container
+docker restart lms_postgres
+```
+
+#### Phương án B: Cài đặt PostgreSQL thủ công
+
+Nếu bạn đã cài đặt PostgreSQL trên máy:
+
+**Bước 1: Tạo database**
+
+Sử dụng pgAdmin hoặc chạy lệnh SQL:
+
+```sql
+CREATE DATABASE course_management;
+```
+
+**Bước 2: Cập nhật `.env`**
+
+Đảm bảo chuỗi kết nối trong `.env` khớp với cấu hình PostgreSQL của bạn:
+
+```env
+POSTGRES_URL=postgresql://username:password@localhost:5432/database_name
+```
+
+**Giải thích chuỗi kết nối:**
+- `username`: Tên người dùng PostgreSQL (mặc định: `postgres`)
 - `password`: Mật khẩu bạn đã đặt khi cài PostgreSQL
-- `localhost`: Địa chỉ máy chủ (localhost nếu chạy trên máy local)
+- `localhost`: Địa chỉ máy chủ
 - `5432`: Cổng mặc định của PostgreSQL
-- `database_name`: Tên cơ sở dữ liệu bạn muốn sử dụng (ví dụ: `itss_db`)
-
-**Ví dụ:**
-
-```env
-DATABASE_URL=postgresql://postgres:mypassword@localhost:5432/itss_db
-```
-
-> **Lưu ý:** Bạn cần tạo database trong PostgreSQL trước. Có thể sử dụng pgAdmin hoặc chạy lệnh SQL:
->
-> ```sql
-> CREATE DATABASE itss_db;
-> ```
+- `database_name`: Tên database bạn đã tạo
 
 ### 3. Cài đặt dependencies và khởi tạo database
 
@@ -143,22 +205,46 @@ Sau khi seed database, bạn có thể đăng nhập bằng các tài khoản sa
 - ✅ Xem thống kê hệ thống
 
 ## Công nghệ sử dụng
+**Nếu dùng Docker:**
+- Kiểm tra container đang chạy: `docker ps`
+- Xem logs: `docker logs lms_postgres`
+- Khởi động lại container: `docker restart lms_postgres`
+- Kiểm tra biến môi trường trong `.env` khớp với `docker-compose.yml`
 
-- **Frontend:** Next.js 15, React 19, TypeScript
-- **UI Framework:** Radix UI Themes
-- **Backend:** Next.js API Routes
-- **Database:** PostgreSQL với Prisma ORM
-- **Styling:** Tailwind CSS
-- **Authentication:** Custom auth với localStorage
+**Nếu dùng PostgreSQL thủ công:**
+- Kiểm tra PostgreSQL đã chạy chưa
+- Xác nhận thông tin trong `.env` đúng
+- Đảm bảo database đã được tạo
 
-## Cấu trúc thư mục
+### Lỗi khi seed
 
+- Chạy `npm run db:push` lại
+- Nếu vẫn lỗi, thử `npm run db:reset` rồi `npm run db:seed`
+
+### Port 3000 đã được sử dụng
+
+Chạy với port khác:
+
+```bash
+PORT=3001 npm run dev
 ```
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   ├── dashboard/         # Dashboard pages
-│   └── login/             # Login page
-├── components/            # React components
+
+### Port 5432 (PostgreSQL) đã được sử dụng
+
+Nếu bạn đã có PostgreSQL cài sẵn và đang chạy trên port 5432, bạn có hai lựa chọn:
+
+1. **Dừng PostgreSQL local và dùng Docker:**
+   ```bash
+   # Windows (trong PowerShell as Admin)
+   Stop-Service postgresql-x64-[version]
+   
+   # Linux/macOS
+   sudo service postgresql stop
+   ```
+
+2. **Sử dụng PostgreSQL local thay vì Docker:**
+   - Không chạy `docker compose up`
+   - Tạo database thủ công theo hướng dẫn Phương án B components/            # React components
 │   └── ui/               # Reusable UI components
 ├── contexts/             # React contexts
 ├── lib/                  # Utility libraries
