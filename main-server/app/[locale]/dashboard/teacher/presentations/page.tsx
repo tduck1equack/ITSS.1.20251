@@ -4,16 +4,22 @@ import { useCallback, useEffect, useState } from "react";
 import axios from "@/lib/axios";
 import { Presentation } from "@/types/presentation";
 import CreatePresentationDialog from "@/components/features/interactive-slides/CreatePresentationDialog";
-import { Plus, FileText, Edit } from "lucide-react";
+import { Plus, FileText, Edit, Play, BarChart } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import StartSessionDialog from "@/components/features/interactive-slides/StartSessionDialog";
 
 export default function PresentationsPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [presentations, setPresentations] = useState<Presentation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // feature follow dialog and presentation
+  const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
+  const [selectedPresentation, setSelectedPresentation] =
+    useState<Presentation | null>(null);
 
   const params = useParams();
   const locale = (params?.locale as string) || "vi";
@@ -83,13 +89,31 @@ export default function PresentationsPage() {
             <div key={p.id} className="bg-white border rounded-lg p-5">
               <h3 className="font-semibold">{p.name}</h3>
 
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-3 mt-4">
                 <Link
                   href={`/${locale}/dashboard/teacher/presentations/${p.id}/edit`}
-                  className="text-blue-600"
+                  className="flex items-center gap-1 text-blue-600 text-sm"
                 >
-                  <Edit size={16} /> Biên tập
+                  <Edit size={16} /> Biên tập câu hỏi
                 </Link>
+
+                <Link
+                  href={`/${locale}/dashboard/teacher/presentations/${p.id}/reports`}
+                  className="flex items-center gap-1 text-purple-600 text-sm"
+                  title="Xem lịch sử báo cáo"
+                >
+                  <BarChart size={16} /> Thống kê
+                </Link>
+
+                <button
+                  onClick={() => {
+                    setSelectedPresentation(p);
+                    setIsStartDialogOpen(true);
+                  }}
+                  className="flex items-center gap-1 text-green-600 text-sm"
+                >
+                  <Play size={16} /> Trình chiếu
+                </button>
               </div>
             </div>
           ))}
@@ -101,6 +125,18 @@ export default function PresentationsPage() {
         onClose={() => setIsDialogOpen(false)}
         onSuccess={fetchPresentations}
       />
+
+      {selectedPresentation && (
+        <StartSessionDialog
+          open={isStartDialogOpen}
+          onClose={() => {
+            setIsStartDialogOpen(false);
+            setSelectedPresentation(null);
+          }}
+          presentationId={selectedPresentation.id}
+          presentationName={selectedPresentation.name}
+        />
+      )}
     </div>
   );
 }
